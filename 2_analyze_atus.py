@@ -1,13 +1,28 @@
+"""
+Author: Joshua Ashkinaze
+
+Description: Gets the top N activities from ATUS. Specifically, we create tupples of <activity, location> and percentage of ppl
+who reported doing that activity in that location (using weighted frequency). Then we save TOP_N.
+
+Inputs:
+- data/raw/atus.csv: raw atus file
+
+Outputs:
+- data/raw/atus_top_acts.jsonl: jsonl file of the top N activities
+- data/clean/fixed_atus_top_acts.jsonl: jsonl file of the top N activities with manual cleaned strings
+"""
+
 import pandas as pd
-import numpy as np
 import os
 
 from helpers import replace_from_dict
 
-# Create directories if they don't exist
+TOP_N = 50
+
 os.makedirs("data/clean", exist_ok=True)
 
-# Lists for filtering and cleaning
+
+# Remove rows with these locations because vague
 invalid_where = [
     "other mode of transportation",
     "don't know",
@@ -17,10 +32,13 @@ invalid_where = [
     "unspecified place"
 ]
 
+# Remove rows with these activities because vague
 invalid_activities = [
-    "work (other job(s)"
+    "work (other job(s)",
+    "insufficient detail in verbatim"
 ]
 
+# Certain strings are messy in activity labels
 act_delete_strs = [
     "(2003)",
     "(2003+)",
@@ -50,9 +68,9 @@ act_delete_strs = [
     "n.e.c.",
 ]
 
-# Create a preposition mapping for different locations
+# Create a preposition mapping for different locations.
 location_prepositions = {
-    # "at" locations (enclosed spaces/establishments)
+    # "at" locations
     "a person's workplace": "at",
     "school": "at",
     "place of worship": "at a",
@@ -63,8 +81,7 @@ location_prepositions = {
     "post office": "at the",
     "library": "at the",
     "bank": "at a",
-
-    # "in" locations (enclosed vehicles/spaces)
+    # "in" locations
     "a person's home or yard": "in",
     "someone else's home": "in",
     "airplane": "on an",
@@ -74,11 +91,13 @@ location_prepositions = {
     "bus": "on a",
     "boat/ferry": "on a",
     "taxi/limousine service": "in a",
-
-    # "on/by" locations (outdoor/movement)
-    "outdoors--not at home": "in an",
+    # "on/by" locations
+    "outdoors--not at home": "in the",
     "walking": "while",
-    "bicycle": "on a"
+    "bicycle": "on a",
+
+    # as a
+    "a driver of car, truck, or motorcycle": "as"
 }
 
 
@@ -86,29 +105,27 @@ location_prepositions = {
 def clean_activity(act_label):
     if not isinstance(act_label, str):
         return act_label
-
     rename_activities = {
         "work, main job": "working on main job",
         "work, other job(s)": "working on side job(s)",
         "relaxing, thinking": "relaxing or thinking",
         "hh": "household",
         "trvl": "travel",
-        "wtg": "waiting"
+        "wtg": "waiting",
+        "rsrch": "research"
     }
-
     act_label = replace_from_dict(act_label, rename_activities)
-
     act_label = act_label.replace("r's", "one's own")
     for s in act_delete_strs:
         act_label = act_label.replace(s, "")
-
     while "  " in act_label:
         act_label = act_label.replace("  ", " ")
-
     return act_label.strip()
 
 
 def clean_location(loc_label):
+    if not isinstance(loc_label, str): # Added check for non-string input
+        return loc_label
     loc_label = loc_label.replace("r's", "one's own")
     for s in act_delete_strs:
         loc_label = loc_label.replace(s, "")
@@ -122,70 +139,62 @@ def clean_location(loc_label):
 def create_context_string(row):
     activity = row['activity']
     location = row['where']
-    preposition = location_prepositions.get(location, "at")
 
-    if location in ["walking", "bicycle"]:
-        return f"{activity} {preposition} {location}"
+    cleaned_loc = clean_location(location) if isinstance(location, str) else location
+    preposition = location_prepositions.get(cleaned_loc, "at") # Use cleaned loc for lookup
+
+    if cleaned_loc in ["walking", "bicycle"]:
+        return f"{activity} {preposition} {cleaned_loc}"
     else:
         return f"{activity} {preposition} {location}"
 
 
-# Main execution
-# Load the ATUS data
+
+# Load data
+################################
+################################
+
+
 df = pd.read_csv("data/raw/atus.csv")
-print("Original columns:", df.columns)
+
 
 # Apply data cleaning
 ################################
 ################################
-# drop invalid locations
 df = df[~df['where'].isin(invalid_where)]
-# some activities are nec (not elsewhere classified) and should be dropped
 df['nec'] = df['activity'].apply(lambda x: 1 if "n.e.c" in str(x) else 0)
 df = df[df['nec'] == 0]
 print("After dropping nec activities:", df.shape)
 
-# clean stuff
 df['activity'] = df['activity'].apply(clean_activity)
 df['where'] = df['where'].apply(clean_location)
 df = df[~df['activity'].isin(invalid_activities)]
-df['string'] = df.apply(create_context_string, axis=1)
 
-# Calculate frequency and duration
+# Filter out rows where cleaning might result in empty strings or NaN, if necessary
+df = df.dropna(subset=['activity', 'where'])
+df = df[df['activity'] != '']
+df = df[df['where'] != '']
+
+df['duration_binary'] = df['duration'].apply(lambda x: 1 if x > 1 else 0)
+
+
+
+# Calculate frequency (weighted) and duration
 ################################
 ################################
-# Group by activity and location to get frequency
-activity_location_freq = df.groupby(['activity', 'where']).agg(
-    num_respondents=('caseid', 'nunique')
-).reset_index()
 
-total_respondents = df['caseid'].nunique()
-activity_location_freq['frequency'] = activity_location_freq['num_respondents'] / total_respondents
 
-# Calculate weighted average duration using wt06 (survey weight)
-activity_location_duration = df.groupby(['activity', 'where']).apply(
-    lambda x: (x['duration'] * x['wt06']).sum() / x['wt06'].sum()
-).reset_index(name='avg_duration')
+total_weights = df['wt06'].sum()
+grouped = df.groupby(['where', 'activity'])['wt06'].sum()
+weight_prop = grouped / total_weights
+prop_df = weight_prop.reset_index()
+prop_df.columns = ['where', 'activity', 'weighted_prop']
 
-# Compute statistics
-################################
-################################
-# Merge frequency and duration data
-context_metrics = pd.merge(
-    activity_location_freq,
-    activity_location_duration,
-    on=['activity', 'where']
-)
+top = prop_df.sort_values(by='weighted_prop', ascending=False).head(TOP_N)
 
-# Calculate percentile ranks
-context_metrics['duration_percentile'] = context_metrics['avg_duration'].rank(pct=True)
-context_metrics['frequency_percentile'] = context_metrics['frequency'].rank(pct=True)
-context_metrics['context_score'] = context_metrics['frequency_percentile']  # using perecentile for paper
+top['string'] = top.apply(create_context_string, axis=1)
 
-# Sort by combined score in descending order
-top_contexts = context_metrics.sort_values('context_score', ascending=False)
-top_contexts_subset = top_contexts.head(50)
+top[['string', 'activity', 'where', 'weighted_prop']].to_json("data/raw/atus_top_acts.jsonl", orient="records", lines=True)
 
-top_contexts_subset['string'] = top_contexts_subset.apply(create_context_string, axis=1)
+top[['string', 'activity', 'where', 'weighted_prop']].to_json("data/clean/fixed_atus_top_acts.jsonl", orient="records", lines=True)
 
-top_contexts.to_json("data/clean/atus_context_metrics.jsonl", orient="records", lines=True)
