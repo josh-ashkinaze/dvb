@@ -16,6 +16,7 @@ on this file to get the preferences back.
 
 import pandas as pd
 import json
+from pprint import pprint
 
 if __name__ == "__main__":
     with open("data/clean/fixed_preferences.json") as f:
@@ -42,6 +43,12 @@ if __name__ == "__main__":
     df = pd.DataFrame(data)
     df['idx'] = [i+1 for i in range(len(df))]
     df.to_csv("data/clean/qualtrics_loop_merge.csv", index=False)
+
+    # samples
+    for idx, row in df.iterrows():
+        pprint(f"Row {idx}: {row.to_dict()}")
+        if idx == 2:
+            break
 
 
 
