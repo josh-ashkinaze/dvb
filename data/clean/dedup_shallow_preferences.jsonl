@@ -1,0 +1,154 @@
+{
+  "accent_preference": {
+    "American": "A preference for the American accent in speech.",
+    "British": "A preference for the British accent in speech."
+  },
+  "activity_level": {
+    "active": "A preference for engaging in physical activities and movement.",
+    "sedentary": "A preference for engaging in activities that involve minimal physical movement."
+  },
+  "attention_to_detail": {
+    "meticulous": "Preference for focusing on details and precision.",
+    "broad": "Preference for focusing on the big picture and general ideas."
+  },
+  "communication_medium": {
+    "Text": "Preference for communicating through written messages.",
+    "Voice": "Preference for communicating through spoken words."
+  },
+  "communication_style": {
+    "direct": "A preference for straightforward and clear communication.",
+    "indirect": "A preference for subtle and nuanced communication."
+  },
+  "conflict_resolution": {
+    "confrontational": "Preference for addressing conflicts directly and openly.",
+    "avoidant": "Preference for sidestepping conflicts and maintaining peace."
+  },
+  "conversation_focus": {
+    "deep": "A preference for conversations that explore complex and profound topics.",
+    "light": "A preference for conversations that are easy-going and superficial."
+  },
+  "conversation_style": {
+    "Direct": "Preference for straightforward and clear communication.",
+    "Indirect": "Preference for subtle and nuanced communication."
+  },
+  "decision_making": {
+    "spontaneous": "A preference for making decisions on the fly without extensive planning.",
+    "planned": "A preference for making decisions with careful planning and consideration."
+  },
+  "decision_style": {
+    "Analytical": "Preference for making decisions based on data and logic.",
+    "Intuitive": "Preference for making decisions based on gut feelings and instincts."
+  },
+  "entertainment": {
+    "movies": "A preference for watching movies as a form of entertainment.",
+    "music": "A preference for listening to music as a form of entertainment."
+  },
+  "entertainment_type": {
+    "action": "A preference for entertainment that is fast-paced and thrilling.",
+    "drama": "A preference for entertainment that is emotional and thought-provoking."
+  },
+  "exercise_location": {
+    "indoor": "Preferring to exercise in indoor environments.",
+    "outdoor": "Preferring to exercise in outdoor environments."
+  },
+  "exercise_type": {
+    "individual": "A preference for exercising alone.",
+    "group": "A preference for exercising in a group setting."
+  },
+  "fashion_style": {
+    "Trendy": "Preference for wearing the latest fashion styles and trends.",
+    "Classic": "Preference for wearing timeless and traditional fashion styles."
+  },
+  "food_preference": {
+    "Spicy": "Preference for foods with strong and hot flavors.",
+    "Mild": "Preference for foods with subtle and gentle flavors."
+  },
+  "formality": {
+    "formal": "A preference for structured and conventional interactions.",
+    "informal": "A preference for casual and relaxed interactions."
+  },
+  "humor_type": {
+    "sarcastic": "A preference for humor that uses irony and mockery to convey a point.",
+    "silly": "A preference for humor that is light-hearted and nonsensical."
+  },
+  "learning_style": {
+    "visual": "A preference for learning through visual aids and imagery.",
+    "auditory": "A preference for learning through listening and auditory materials."
+  },
+  "lifestyle": {
+    "Urban": "Preference for living in a city environment with its amenities.",
+    "Rural": "Preference for living in a countryside environment with its tranquility."
+  },
+  "meal_preference": {
+    "home_cooked": "A preference for meals prepared at home.",
+    "dining_out": "A preference for meals eaten at restaurants or outside the home."
+  },
+  "music_preference": {
+    "live": "A preference for experiencing music through live performances.",
+    "recorded": "A preference for experiencing music through recorded media."
+  },
+  "pace_of_life": {
+    "fast": "A preference for a fast-paced and dynamic lifestyle.",
+    "slow": "A preference for a slow-paced and relaxed lifestyle."
+  },
+  "pet_preference": {
+    "dogs": "A preference for dogs as pets, valuing their loyalty and companionship.",
+    "cats": "A preference for cats as pets, valuing their independence and affection."
+  },
+  "problem_solving": {
+    "analytical": "A preference for solving problems through logical reasoning and analysis.",
+    "intuitive": "A preference for solving problems through instinct and gut feeling."
+  },
+  "reading_material": {
+    "fiction": "Preferring to read imaginative and narrative literature.",
+    "non-fiction": "Preferring to read factual and informative literature."
+  },
+  "risk_tolerance": {
+    "risk-averse": "Preference for avoiding risks and seeking security.",
+    "risk-tolerant": "Preference for taking risks and seeking potential rewards."
+  },
+  "shopping_style": {
+    "browsing": "A preference for leisurely exploring options before making a purchase.",
+    "targeted": "A preference for shopping with a specific item in mind and making quick decisions."
+  },
+  "social_interaction_preference": {
+    "Introverted": "Preference for limited social interaction and solitude.",
+    "Extroverted": "Preference for frequent social interaction and engagement."
+  },
+  "social_media_use": {
+    "Active": "Preference for frequently posting and engaging on social media.",
+    "Passive": "Preference for observing and consuming content without much interaction."
+  },
+  "social_setting": {
+    "large_groups": "A preference for socializing in large groups.",
+    "small_groups": "A preference for socializing in small, intimate groups."
+  },
+  "task_approach": {
+    "multitasking": "A preference for handling multiple tasks simultaneously.",
+    "single-tasking": "A preference for focusing on one task at a time."
+  },
+  "time_of_day": {
+    "day": "A preference for activities and interactions during daylight hours.",
+    "night": "A preference for activities and interactions during nighttime hours."
+  },
+  "transportation_mode": {
+    "public_transport": "A preference for using public transportation systems.",
+    "private_vehicle": "A preference for using a personal vehicle for transportation."
+  },
+  "travel_location": {
+    "domestic": "Preference for traveling within one's own country.",
+    "international": "Preference for traveling to foreign countries."
+  },
+  "travel_style": {
+    "adventurous": "Preference for exploring new and unpredictable experiences.",
+    "relaxed": "Preference for enjoying comfort and familiarity while traveling.",
+  },
+  "weather_preference": {
+    "Warm": "Preference for warm and sunny weather conditions.",
+    "Cold": "Preference for cool and chilly weather conditions."
+  },
+  "work_environment": {
+    "collaborative": "A preference for working in a team-oriented environment.",
+    "independent": "A preference for working alone and autonomously."
+  }
+}
