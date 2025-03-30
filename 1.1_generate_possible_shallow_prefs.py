@@ -131,7 +131,15 @@ def prompt_for_shallow_preferences(prompt):
     return sorted_response
 
 
-if __name__ == "__main__":
+def main():
+    raw_fn = "data/raw/shallow_preferences.jsonl"
+    clean_fn = "data/clean/dedup_shallow_preferences.jsonl"
+
+    if os.path.exists(raw_fn):
+        logging.info(f"Already have raw shallow preferences at {raw_fn}")
+        return
+
+
     all_preferences = {}
 
     for i in tqdm.tqdm(range(ITERS), desc="Generating shallow preferences"):
@@ -147,10 +155,18 @@ if __name__ == "__main__":
 
     sorted_preferences = OrderedDict(sorted(formatted_preferences.items()))
 
-    with open("data/raw/shallow_preferences.jsonl", "w") as f:
+    with open(raw_fn, "w") as f:
         f.write(json.dumps(sorted_preferences) + "\n")
 
-    with open("data/clean/dedup_shallow_preferences.jsonl", "w") as f:
+    with open(clean_fn, "w") as f:
         f.write(json.dumps(sorted_preferences) + "\n")
+
+
 
     logging.info(f"Total categories: {len(sorted_preferences)}")
+
+
+if __name__ == "__main__":
+    main()
+
+

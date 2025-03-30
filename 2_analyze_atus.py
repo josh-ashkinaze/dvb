@@ -194,5 +194,7 @@ top['string'] = top.apply(create_context_string, axis=1)
 
 top[['string', 'activity', 'where', 'weighted_prop']].to_json("data/raw/atus_top_acts.jsonl", orient="records", lines=True)
 
-top[['string', 'activity', 'where', 'weighted_prop']].to_json("data/clean/fixed_atus_top_acts.jsonl", orient="records", lines=True)
+# for manual cleaning
+if not os.path.exists("data/clean/fixed_atus_top_acts.jsonl"):
+    top[['string', 'activity', 'where', 'weighted_prop']].to_json("data/clean/fixed_atus_top_acts.jsonl", orient="records", lines=True)
 

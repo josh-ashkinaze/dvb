@@ -14,6 +14,7 @@ Outputs:
 
 import json
 import re
+import os
 
 
 def fix_json_file(input_path, output_path):
@@ -43,9 +44,13 @@ def fix_json_file(input_path, output_path):
         return None
 
 
-if __name__ == "__main__":
+def main():
     input_file = "data/clean/dedup_shallow_preferences.jsonl"
     output_file = "data/clean/fixed_preferences.json"
+
+    if os.path.exists(output_file):
+        print(f"Fixed preferences already exist at {output_file}")
+        return
 
     preferences = fix_json_file(input_file, output_file)
 
@@ -56,3 +61,7 @@ if __name__ == "__main__":
         print("\nSample categories:")
         for category in sample_categories:
             print(f"- {category}: {list(preferences[category].keys())}")
+
+
+if __name__ == "__main__":
+    main()
