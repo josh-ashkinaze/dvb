@@ -175,8 +175,6 @@ df = df.dropna(subset=['activity', 'where'])
 df = df[df['activity'] != '']
 df = df[df['where'] != '']
 
-df['duration_binary'] = df['duration'].apply(lambda x: 1 if x > 1 else 0)
-
 
 
 # Calculate frequency (weighted) and duration

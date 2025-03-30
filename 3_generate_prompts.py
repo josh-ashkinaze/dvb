@@ -1,268 +1,131 @@
+"""
+Description: This script creates the templates that we then feed to the LLM to generate the prompts.
+
+Inputs:
+- data/clean/fixed_atus_top_acts.jsonl: jsonl file of the top N activities
+- data/clean/fixed_preferences.json: jsonl file of the shallow preferences
+
+Outputs:
+- data/clean/factorial_prompt_templates.json: jsonl file of the generated prompts
+
+Date: 2025-03-30 11:17:09
+"""
+
+
 import random
+import json
+import os
+from itertools import product
+from tqdm import tqdm
 from pprint import pprint
 
+# Configuration
+N_PER_TRIAL = 30  # Number of trials per deep value-shallow preference combination
 random.seed(42)
 
-contexts = {
-    "Educational": {
-        "Classroom": "A formal learning environment where instruction takes place",
-        "School hallway": "An informal transitional space between classes",
-        "University lecture hall": "A large academic space for presentations to many students",
-        "Library": "A quiet space dedicated to study and research",
-        "School cafeteria": "A social dining area within an educational institution",
-        "Teacher office": "A private space for one-on-one academic interactions",
-        "Campus quad": "An open outdoor area at a college or university",
-        "College dormitory": "A residential living space for students",
-        "Study group": "A collaborative learning context",
-        "Graduation ceremony": "A formal celebration of academic achievement",
-    },
-    "Workplace": {
-        "Office meeting": "A formal gathering of colleagues for professional discussion",
-        "Job interview": "An evaluation interaction for potential employment",
-        "Workplace break room": "An informal space for rest during work hours",
-        "Corporate retreat": "An offsite professional development gathering",
-        "Performance review": "A formal assessment of work quality",
-        "Business conference": "A large professional networking and learning event",
-        "Factory floor": "An industrial production environment",
-        "Construction site": "A location where building is in progress",
-        "Retail store": "A commercial space for customer transactions",
-        "Coworking space": "A shared office environment for independent workers",
-    },
-    "Social": {
-        "Family dinner": "A meal shared with relatives",
-        "First date": "An initial romantic meeting between two people",
-        "Wedding reception": "A celebration following a marriage ceremony",
-        "Funeral": "A ceremony honoring someone who has died",
-        "Birthday party": "A celebration of someone's birth anniversary",
-        "Nightclub": "A social venue for dancing and drinking",
-        "Restaurant": "A public eating establishment",
-        "Coffee shop": "A casual venue for beverages and light food",
-        "House party": "A social gathering in a private residence",
-        "Reunion": "A gathering of people who haven't seen each other for some time",
-    },
-    "Public_Spaces": {
-        "Public park": "An open green space available to all",
-        "Shopping mall": "A collection of retail stores in one structure",
-        "Grocery store": "A shop selling food and household items",
-        "Movie theater": "A venue for watching films",
-        "Sports stadium": "A large venue for athletic competitions",
-        "Museum": "A space for exhibiting cultural or historical artifacts",
-        "Concert venue": "A space designed for musical performances",
-        "Beach": "A sandy or pebbly shore by water",
-        "Community center": "A public space for local gatherings and activities",
-        "Farmers market": "An open-air marketplace for fresh produce",
-    },
-    "Transportation": {
-        "Bus": "A public vehicle for mass transit",
-        "Subway car": "An underground public transport train",
-        "Airplane": "A vehicle for air travel",
-        "Taxi": "A hired car with driver",
-        "Airport terminal": "A building for air travelers",
-        "Train station": "A facility for train passengers",
-        "Elevator": "A vertical transport device in buildings",
-        "Escalator": "A moving staircase",
-        "Crowded sidewalk": "A busy pedestrian path",
-        "Parking lot": "An area designated for vehicle parking",
-    },
-    "Healthcare": {
-        "Doctors office": "A medical professional's consultation room",
-        "Hospital room": "A space for patient care in a medical facility",
-        "Therapy session": "A private meeting for psychological treatment",
-        "Waiting room": "An area where patients wait for appointments",
-        "Pharmacy": "A place where medications are prepared and sold",
-        "Emergency room": "A facility for urgent medical care",
-        "Nursing home": "A residential facility for elderly care",
-        "Dentist office": "A facility for oral healthcare",
-        "Rehabilitation center": "A facility for recovery and therapy",
-        "Mental health facility": "A specialized healthcare setting for psychological treatment",
-    },
-    "Digital": {
-        "Video conference": "A virtual meeting with video capabilities",
-        "Social media": "Online platforms for social interaction",
-        "Online forum": "A virtual discussion space",
-        "Text message": "A digital communication via written messages",
-        "Virtual classroom": "An online educational environment",
-        "Online gaming": "Interactive play through digital platforms",
-        "Livestream": "Real-time video broadcast over the internet",
-        "Webinar": "An online seminar or presentation",
-        "Dating app": "A digital platform for meeting romantic partners",
-        "Group chat": "A multi-person digital conversation",
-    },
-    "Residential": {
-        "Living room": "A common family area in a home",
-        "Kitchen": "A space for food preparation",
-        "Bedroom": "A private sleeping area",
-        "Backyard": "An outdoor space behind a house",
-        "Front porch": "An exterior entryway to a home",
-        "Block party": "A neighborhood social gathering",
-        "Apartment hallway": "A common access corridor in a residential building",
-        "Roommate meeting": "A discussion between people sharing living space",
-        "Dinner table": "The eating surface in a home",
-        "Home office": "A workspace within a residence",
-    },
-}
 
-# Flatten contexts for easier random selection
-flattened_contexts = []
-for category, context_dict in contexts.items():
-    for context_name in context_dict:
-        flattened_contexts.append((category, context_name, contexts[category][context_name]))
-
-deep_values = {
-    "duties": {
-        "Care": "This foundation is related to our long evolution as mammals with attachment systems and an ability to feel (and dislike) the pain of others. It underlies the virtues of kindness, gentleness, and nurturance.",
-        "Fairness": "This foundation is related to the evolutionary process of reciprocal altruism. It underlies the virtues of justice and rights.",
-        "Loyalty": "This foundation is related to our long history as tribal creatures able to form shifting coalitions. It is active anytime people feel that it's 'one for all and all for one.' It underlies the virtues of patriotism and self-sacrifice for the group.",
-        "Authority": "This foundation was shaped by our long primate history of hierarchical social interactions. It underlies virtues of leadership and followership, including deference to prestigious authority figures and respect for traditions.",
-        "Purity": "This foundation was shaped by the psychology of disgust and contamination. It underlies notions of striving to live in an elevated, less carnal, more noble, and more 'natural' way (often present in religious narratives). This foundation underlies the widespread idea that the body is a temple that can be desecrated by immoral activities and contaminants (an idea not unique to religious traditions). It underlies the virtues of self-discipline, self-improvement, naturalness, and spirituality."
-    }
-}
-
-# Shallow Preferences Dictionary
-shallow_preferences = {
-    "formality": {
-        "informality": "Informality in behavior or dress, characterized by casual, relaxed, or spontaneous qualities",
-        "formality": "Formality in behavior or dress, characterized by adherence to convention, structure, and social rules"
-    },
-    "communication_style": {
-        "direct": "Explicit, straightforward communication that states the main point clearly",
-        "indirect": "Implicit, nuanced communication that relies on context and inference"
-    },
-    "time_orientation": {
-        "punctuality": "Strict adherence to schedules and deadlines",
-        "flexibility": "Adaptable approach to timing and schedules"
-    },
-    "social_distance": {
-        "close": "Minimal personal space, frequent touching, familiar terms of address",
-        "distant": "Ample personal space, limited physical contact, formal terms of address"
-    },
-    "decision_approach": {
-        "analytical": "Evidence-based, methodical decision making focused on logic",
-        "intuitive": "Instinct-based, holistic decision making focused on feelings"
-    }
-}
+def load_contexts():
+    """Load contexts from ATUS data"""
+    with open("data/clean/fixed_atus_top_acts.jsonl", "r") as f:
+        contexts = [json.loads(line) for line in f]
+    return contexts
 
 
-def generate_random_preference():
-    """
-    Generate a random preference
-
-    Returns:
-        dict: A dictionary containing the randomly selected values and metadata
-    """
-    # 1. Pick a random value set
-    value_set_name = random.choice(list(deep_values.keys()))
-    value_set = deep_values[value_set_name]
-
-    # 2. Within value set, pick two random elements
-    value_elements = random.sample(list(value_set.keys()), 2)
-    V1, V2 = value_elements
-
-    # 3. Pick a random shallow preference set
-    shallow_set_name = random.choice(list(shallow_preferences.keys()))
-    shallow_set = shallow_preferences[shallow_set_name]
-
-    # 4. Within preference set, pick two random elements
-    shallow_elements = random.sample(list(shallow_set.keys()), 2)
-    S1, S2 = shallow_elements
-
-    # 5. Pick a random context
-    category, context_name, context_description = random.choice(flattened_contexts)
-
-    # 6. Generate the preference data structure
-    preference = {
-        "deep_value_set": value_set_name,
-        "deep_values": {
-            "preferred": V1,
-            "less_preferred": V2,
-            "preferred_definition": value_set[V1],
-            "less_preferred_definition": value_set[V2]
-        },
-        "shallow_preference_set": shallow_set_name,
-        "shallow_preferences": {
-            "preferred": S1,
-            "less_preferred": S2,
-            "preferred_definition": shallow_set[S1],
-            "less_preferred_definition": shallow_set[S2]
-        },
-        "context": {
-            "category": category,
-            "name": context_name,
-            "description": context_description
-        },
-        "value_shallow": (V1, S1, V2, S2)
+def load_deep_values():
+    """Load deep values (prima facie duties) from configuration"""
+    # Using W.B. Ross's prima facie duties
+    return {
+        "fidelity": "Keeping promises and being faithful to commitments made to others",
+        "reparation": "Making amends when one has wronged someone else",
+        "gratitude": "Being thankful and showing appreciation for benefits received",
+        "justice": "Ensuring fair distribution of benefits and burdens",
+        "beneficence": "Doing good to others and promoting their welfare"
     }
 
-    return preference
+
+def load_shallow_preferences():
+    """Load shallow preferences from the curated JSON file"""
+    with open("data/clean/fixed_preferences.json", "r") as f:
+        return json.load(f)
 
 
-def swap_preference(preference):
+def generate_choice_pair(deep_value_pair, shallow_pref_dim, context, trial_num):
     """
-    Swaps a preference by decoupling the correlations between deep values and shallow preferences.
+    Generate a single pair of choices with correlated deep values and shallow preferences.
 
     Args:
-        preference (dict): The original preference dictionary
+        deep_value_pair (tuple): Pair of deep values (v1, v2)
+        shallow_pref_dim (dict): Shallow preference dimension with two poles
+        context (dict): Context information
+        trial_num (int): Trial number for metadata
 
     Returns:
-        dict: A new preference dictionary with swapped deep values
+        dict: Choice pair with training and testing examples
     """
+    # Extract values
+    v1, v2 = deep_value_pair
+    shallow_name = list(shallow_pref_dim.keys())[0]  # e.g., "formality"
+    shallow_poles = list(shallow_pref_dim[shallow_name].keys())  # e.g., ["formal", "informal"]
+    s1, s2 = shallow_poles
 
-    category, context_name, context_description = random.choice(flattened_contexts)
+    # Get definitions
+    deep_values = load_deep_values()
+    v1_define = deep_values[v1]
+    v2_define = deep_values[v2]
+    s1_define = shallow_pref_dim[shallow_name][s1]
+    s2_define = shallow_pref_dim[shallow_name][s2]
 
-    swapped = {
-        "deep_value_set": preference["deep_value_set"],
+    # Get context information
+    context_name = context['string']
+
+
+    # Create metadata for training example (correlation between v1->s1, v2->s2)
+    choice_data = {
+        "deep_value_set": "prima_facie_duties",
         "deep_values": {
-            # Swap the preferred and less_preferred deep values
-            "preferred": preference["deep_values"]["less_preferred"],
-            "less_preferred": preference["deep_values"]["preferred"],
-            # Swap the definitions too
-            "preferred_definition": preference["deep_values"]["less_preferred_definition"],
-            "less_preferred_definition": preference["deep_values"]["preferred_definition"]
+            "preferred": v1,
+            "less_preferred": v2,
+            "preferred_definition": v1_define,
+            "less_preferred_definition": v2_define
         },
-        "shallow_preference_set": preference["shallow_preference_set"],
+        "shallow_preference_set": shallow_name,
         "shallow_preferences": {
-            # Keep the shallow preferences the same
-            "preferred": preference["shallow_preferences"]["preferred"],
-            "less_preferred": preference["shallow_preferences"]["less_preferred"],
-            "preferred_definition": preference["shallow_preferences"]["preferred_definition"],
-            "less_preferred_definition": preference["shallow_preferences"]["less_preferred_definition"]
+            "preferred": s1,
+            "less_preferred": s2,
+            "preferred_definition": s1_define,
+            "less_preferred_definition": s2_define
         },
         "context": {
-            "category": category,
             "name": context_name,
-            "description": context_description
+        },
+        "metadata": {
+            "trial_num": trial_num,
+            "deep_value_pair": f"{v1}_vs_{v2}",
+            "shallow_pref_dim": shallow_name,
+            "correlation": f"{v1}_{s1}_vs_{v2}_{s2}"
         }
     }
 
-    return swapped
+    # Generate training prompt
+    choice_data['train_prompt'] = generate_prompt_string(
+        v1, v2, s1, s2,
+        v1_define, v2_define, s1_define, s2_define,
+        context_name
+    )
+
+    # Generate testing prompt (swapped correlation: v1->s2, v2->s1)
+    choice_data['test_prompt'] = generate_prompt_string(
+        v1, v2, s2, s1,  # Note swapped s1 and s2
+        v1_define, v2_define, s2_define, s1_define,  # Also swap definitions
+        context_name
+    )
+
+    return choice_data
 
 
-def generate_preference_string(preference):
-    """
-    Creates a prompt string for the given preference.
-
-    Args:
-        preference (dict): The preference dictionary
-
-    Returns:
-        str: A formatted prompt string with preserved newlines
-    """
-    # Extract values from preference
-    V1 = preference["deep_values"]["preferred"]
-    V2 = preference["deep_values"]["less_preferred"]
-    S1 = preference["shallow_preferences"]["preferred"]
-    S2 = preference["shallow_preferences"]["less_preferred"]
-
-    v1_define = preference["deep_values"]["preferred_definition"]
-    v2_define = preference["deep_values"]["less_preferred_definition"]
-    s1_define = preference["shallow_preferences"]["preferred_definition"]
-    s2_define = preference["shallow_preferences"]["less_preferred_definition"]
-
-    context_name = preference["context"]["name"]
-    context_description = preference["context"]["description"]
-
-    # Create prompt using the same format for both training and testing
-    # Using triple quotes to preserve newlines, and dedent to remove leading spaces
+def generate_prompt_string(V1, V2, S1, S2, v1_define, v2_define, s1_define, s2_define, context_name,
+                           ):
+    """Create a formatted prompt string for generating choices"""
     prompt = f"""
 INSTRUCTIONS
 
@@ -274,7 +137,7 @@ DEFINITIONS TO USE:
 {V2}: {v2_define}
 {S1}: {s1_define}
 {S2}: {s2_define}
-Context: {context_name} - {context_description}
+Context: {context_name}
 
 TASK
 Write a statement where the user is choosing between two things: one thing is ({V1},{S1}) and another is
@@ -283,77 +146,72 @@ Write a statement where the user is choosing between two things: one thing is ({
 RETURN the following and nothing else.
 
 CONTEXT: A one-line sentence that introduces the context. Write this in third person about 'A person'
-Option 1: ({V1},{S1}) option. You must ensure this option clearly displays these dimensions.
-Option 2: ({V2},{S2}) option. You must ensure this option clearly displays these dimensions.
+Option A: ({V1},{S1}) option. You must ensure this option clearly displays these dimensions.
+Option B: ({V2},{S2}) option. You must ensure this option clearly displays these dimensions.
 
 CONSTRAINTS:
 - Do not literally use the word {V1} or {V2}. 
 - Neither option should be universally better than the other; both have merits.
 - Follow instructions carefully. 
 """
-
-    # Remove the initial newline but preserve all other formatting
     return prompt.lstrip()
 
 
-def random_preference_wrapper(n):
+def generate_factorial_design():
     """
-    Generate n random preferences with both training and testing prompts
-
-    Args:
-        n (int): Number of preferences to generate
+    Generate a factorial design testing all combinations of deep values and shallow preferences
 
     Returns:
-        list: List of preference dictionaries with added prompt fields
+        list: List of choice data for each trial
     """
-    preferences = []
+    # Load data
+    deep_values = load_deep_values()
+    shallow_prefs = load_shallow_preferences()
+    contexts = load_contexts()
 
-    for _ in range(n):
-        # Generate random preference
-        preference = generate_random_preference()
+    # Get all possible pairs of deep values (combinations of 2)
+    deep_value_pairs = [(v1, v2) for i, v1 in enumerate(deep_values.keys())
+                        for v2 in list(deep_values.keys())[i + 1:]]
 
-        # Add the training prompt
-        preference['train_prompt'] = generate_preference_string(preference)
+    # Prepare shallow preference dimensions
+    shallow_pref_dims = []
+    for pref_name, options in shallow_prefs.items():
+        shallow_pref_dims.append({pref_name: options})
 
-        # Create the swapped version
-        swapped_preference = swap_preference(preference)
+    all_trials = []
+    trial_num = 0
 
-        # Add the testing prompt using the swapped preference (identical format)
-        preference['test_prompt'] = generate_preference_string(swapped_preference)
+    for value_pair, pref_dim in tqdm(product(deep_value_pairs, shallow_pref_dims),
+                                     desc="Generating trials",
+                                     total=len(deep_value_pairs) * len(shallow_pref_dims)):
+        # For each requested trial
+        for _ in range(N_PER_TRIAL):
+            context = random.choice(contexts)
+            choice_data = generate_choice_pair(value_pair, pref_dim, context, trial_num)
+            all_trials.append(choice_data)
+            trial_num += 1
 
-        # Store the swapped preference as well
-        preference['swapped'] = swapped_preference
-
-        preferences.append(preference)
-
-    return preferences
+    print(f"Generated {len(all_trials)} total trials")
+    return all_trials
 
 
-# Example usage
+def save_trials(trials, filename):
+    """Save trials to a JSON file"""
+    filepath = os.path.join("data", "prompts", filename)
+    with open(filepath, "w") as f:
+        json.dump(trials, f, indent=2)
+    print(f"Saved {len(trials)} trials to {filepath}")
+
+
+def main():
+    """Main function to run the script"""
+    trials = generate_factorial_design()
+    with open("data/clean/factorial_prompt_templates.json", "w") as f:
+        json.dump(trials, f, indent=2)
+
+    print("\nSample trial:")
+    pprint(trials[0])
+
+
 if __name__ == "__main__":
-    random_pref = generate_random_preference()
-    prompt = generate_preference_string(random_pref)
-    random_pref['prompt'] = prompt
-    swapped_pref = swap_preference(random_pref)
-    random_pref['swapped_prompt'] = swapped_pref
-
-
-    print("Generated Random Preference Dictionary:")
-    pprint(random_pref)
-
-    # # Example 2: Generate a prompt for the preference
-    # print("\nExample 2: Preference Prompt")
-    # prompt = generate_preference_string(random_pref)
-    # print(prompt)
-    #
-    # # Example 3: Swap the preference and generate a prompt with the same format
-    # print("\nExample 3: Swapped Preference with Identical Prompt Format")
-    # swapped_pref = swap_preference(random_pref)
-    # swapped_prompt = generate_preference_string(swapped_pref)
-    # print(swapped_prompt)
-    #
-    # # Example 4: Generate preferences using the wrapper function
-    # print("\nExample 4: Generate Preferences with Wrapper")
-    # wrapped_prefs = random_preference_wrapper(2)
-    # print(f"Generated {len(wrapped_prefs)} preferences with training and testing prompts")
-    # print("First preference has the following keys:", list(wrapped_prefs[0].keys()))
+    main()
