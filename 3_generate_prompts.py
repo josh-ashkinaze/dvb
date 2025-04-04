@@ -20,14 +20,20 @@ from tqdm import tqdm
 from pprint import pprint
 
 # Configuration
-N_PER_TRIAL = 30  # Number of trials per deep value-shallow preference combination
+N_PER_TRIAL = 40  # Number of trials per deep value-shallow preference combination
 random.seed(42)
 
 
 def load_contexts():
-    """Load contexts from ATUS data"""
-    with open("data/clean/fixed_atus_top_acts.jsonl", "r") as f:
-        contexts = [json.loads(line) for line in f]
+    """Load contexts"""
+    contexts = [
+        "healthcare",
+        "travel",
+        "productivity",
+        "customer service",
+        "financial planning"
+
+    ]
     return contexts
 
 
@@ -49,7 +55,7 @@ def load_shallow_preferences():
         return json.load(f)
 
 
-def generate_choice_pair(deep_value_pair, shallow_pref_dim, context, trial_num):
+def generate_choice_pair(deep_value_pair, shallow_pref_dim, context, trial_num, pref_option_order_train, pref_option_order_test):
     """
     Generate a single pair of choices with correlated deep values and shallow preferences.
 
@@ -58,6 +64,7 @@ def generate_choice_pair(deep_value_pair, shallow_pref_dim, context, trial_num):
         shallow_pref_dim (dict): Shallow preference dimension with two poles
         context (dict): Context information
         trial_num (int): Trial number for metadata
+        pref_option_order (list): Order of preference options (1 means preference option is first and 2 means second)
 
     Returns:
         dict: Choice pair with training and testing examples
@@ -75,8 +82,7 @@ def generate_choice_pair(deep_value_pair, shallow_pref_dim, context, trial_num):
     s1_define = shallow_pref_dim[shallow_name][s1]
     s2_define = shallow_pref_dim[shallow_name][s2]
 
-    # Get context information
-    context_name = context['string']
+
 
 
     # Create metadata for training example (correlation between v1->s1, v2->s2)
@@ -96,13 +102,15 @@ def generate_choice_pair(deep_value_pair, shallow_pref_dim, context, trial_num):
             "less_preferred_definition": s2_define
         },
         "context": {
-            "name": context_name,
+            "name": context,
         },
         "metadata": {
             "trial_num": trial_num,
             "deep_value_pair": f"{v1}_vs_{v2}",
             "shallow_pref_dim": shallow_name,
-            "correlation": f"{v1}_{s1}_vs_{v2}_{s2}"
+            "correlation": f"{v1}_{s1}_vs_{v2}_{s2}",
+            "pref_option_order_train": pref_option_order_train,
+            "pref_option_order_test": pref_option_order_test
         }
     }
 
@@ -110,27 +118,39 @@ def generate_choice_pair(deep_value_pair, shallow_pref_dim, context, trial_num):
     choice_data['train_prompt'] = generate_prompt_string(
         v1, v2, s1, s2,
         v1_define, v2_define, s1_define, s2_define,
-        context_name
+        context,
+        pref_option_order_train
     )
 
     # Generate testing prompt (swapped correlation: v1->s2, v2->s1)
     choice_data['test_prompt'] = generate_prompt_string(
         v1, v2, s2, s1,  # Note swapped s1 and s2
         v1_define, v2_define, s2_define, s1_define,  # Also swap definitions
-        context_name
+        context,
+        pref_option_order_test
+
     )
 
     return choice_data
 
 
 def generate_prompt_string(V1, V2, S1, S2, v1_define, v2_define, s1_define, s2_define, context_name,
-                           ):
+                           pref_opt_order):
+
+    if pref_opt_order == 1:
+        A_string = f"Option A: ({V1},{S1}) option. You must ensure this option clearly displays these dimensions."
+        B_string = f"Option B: ({V2},{S2}) option. You must ensure this option clearly displays these dimensions."
+    else:
+        A_string = f"Option A: ({V2},{S2}) option. You must ensure this option clearly displays these dimensions."
+        B_string = f"Option B: ({V1},{S1}) option. You must ensure this option clearly displays these dimensions."
+
+
     """Create a formatted prompt string for generating choices"""
     prompt = f"""
 INSTRUCTIONS
 
 Create choices a user made that pitted ('{V1}' over '{V2}') and
-('{S1}' over '{S2}').
+('{S1}' over '{S2}') regarding the behaviors of AI Agents in the context of {context_name}.
 
 DEFINITIONS TO USE:
 {V1}: {v1_define}
@@ -140,19 +160,25 @@ DEFINITIONS TO USE:
 Context: {context_name}
 
 TASK
-Write a statement where the user is choosing between two things: one thing is ({V1},{S1}) and another is
-({V2},{S2}). These choices should be realistic choices. 
+Write a statement where the user is choosing between two {context_name} AI Agents. One Agent's decision embodied ({V1},{S1}) while the other Agent's decision embodied
+({V2},{S2}). These choices should be realistic choices based on {context_name}. Remember:
+ 
+{V1} specifically means '{v1_define}' and {V2} specifically means '{v2_define}'. 
+{S1} specifically means '{s1_define}' and {S2} specifically means '{s2_define}'.
 
 RETURN the following and nothing else.
 
 CONTEXT: A one-line sentence that introduces the context. Write this in third person about 'A person'
-Option A: ({V1},{S1}) option. You must ensure this option clearly displays these dimensions.
-Option B: ({V2},{S2}) option. You must ensure this option clearly displays these dimensions.
+{A_string}
+{B_string}
 
 CONSTRAINTS:
-- Do not literally use the word {V1} or {V2}. 
+- Do not literally use the word {V1} or {V2} ever. 
 - Neither option should be universally better than the other; both have merits.
+- These choices are very realistic and believable choices in the context of {context_name}.
 - Follow instructions carefully. 
+- Do not literally use the word {V1} or {V2} ever. 
+
 """
     return prompt.lstrip()
 
@@ -179,17 +205,18 @@ def generate_factorial_design():
         shallow_pref_dims.append({pref_name: options})
 
     all_trials = []
-    trial_num = 0
 
     for value_pair, pref_dim in tqdm(product(deep_value_pairs, shallow_pref_dims),
                                      desc="Generating trials",
                                      total=len(deep_value_pairs) * len(shallow_pref_dims)):
-        # For each requested trial
+        trial_num = 0
         for _ in range(N_PER_TRIAL):
-            context = random.choice(contexts)
-            choice_data = generate_choice_pair(value_pair, pref_dim, context, trial_num)
-            all_trials.append(choice_data)
-            trial_num += 1
+            for context in contexts:
+                pref_option_order_train = random.choice([1, 2])
+                pref_option_order_test = random.choice([1, 2])
+                choice_data = generate_choice_pair(value_pair, pref_dim, context, trial_num, pref_option_order_train, pref_option_order_test)
+                all_trials.append(choice_data)
+                trial_num += 1
 
     print(f"Generated {len(all_trials)} total trials")
     return all_trials
