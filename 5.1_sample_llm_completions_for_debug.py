@@ -7,8 +7,31 @@ import random
 # Read in jsons
 ###########################
 completions_fn = "data/clean/factorial_prompt_templates_with_completions.jsonl"
-output_md_file = "debug_output.md"  # Output filename
+output_md_file = "debug_output.md"
 
+
+def wrap_text(text, width=80):
+    words = text.split()
+    lines = []
+    current_line = []
+    current_length = 0
+
+    for word in words:
+        if current_length + len(word) + 1 <= width:
+            current_line.append(word)
+            current_length += len(word) + 1
+        else:
+            lines.append(" ".join(current_line))
+            current_line = [word]
+            current_length = len(word)
+
+    if current_line:
+        lines.append(" ".join(current_line))
+
+    return "\n".join(lines)
+
+# Sample
+###############
 jsons = []
 with open(completions_fn, "r") as f:
     for line in f:
@@ -43,27 +66,6 @@ with open(output_md_file, "w") as md_file:
 
         md_file.write(f"### Context\n")
 
-
-        # Function to wrap text to prevent overflow
-        def wrap_text(text, width=80):
-            words = text.split()
-            lines = []
-            current_line = []
-            current_length = 0
-
-            for word in words:
-                if current_length + len(word) + 1 <= width:  # +1 for the space
-                    current_line.append(word)
-                    current_length += len(word) + 1
-                else:
-                    lines.append(" ".join(current_line))
-                    current_line = [word]
-                    current_length = len(word)
-
-            if current_line:
-                lines.append(" ".join(current_line))
-
-            return "\n".join(lines)
 
 
         formatted_context = wrap_text(context)
