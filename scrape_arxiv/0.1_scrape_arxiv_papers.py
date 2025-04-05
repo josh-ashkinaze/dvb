@@ -1,28 +1,3 @@
-
-"""
-Date: 2025-04-04 10:39:04
-
-Description: Scrapes arxiv papers.
-
-CREDIT: Using parts of the code from the following sources
-- https://jacktol.net/posts/arxiv_rag_project_part_1/
-- https://christinakouridi.wordpress.com/2019/06/16/harvesting-metadata-of-1-5million-arxiv-papers/
-
-An improvement in this one is better rate limit handling, but the underlyng Sickle logic is similar
-
-Input files:
-- None
-
-Output files:
-- ../data/arxiv/cs_arxiv_metadata_raw.xml: Raw metadata from arxiv
-- ../data/arxiv/cs_arxiv_papers.csv:
-
-
-"""
-
-
-
-
 import logging
 import os
 import time
@@ -32,30 +7,29 @@ from datetime import datetime, timedelta
 from sickle import Sickle
 from urllib.error import HTTPError
 from requests.exceptions import RequestException
-from tenacity import retry, stop_after_attempt, retry_if_exception_type, before_sleep_log
 from tqdm import tqdm
 
-logging.basicConfig(filename=f"{os.path.splitext(os.path.basename(__file__))[0]}.log", level=logging.INFO, format='%(asctime)s: %(message)s', filemode='w', datefmt='%Y-%m-%d %H:%M:%S', force=True)
+logging.basicConfig(filename=f"{os.path.splitext(os.path.basename(__file__))[0]}.log", level=logging.INFO,
+                    format='%(asctime)s: %(message)s', filemode='w', datefmt='%Y-%m-%d %H:%M:%S', force=True)
 
 # Config section - edit these values as needed
 #################
 CONFIG = {
     "N_YEARS": 7,
-    "OUTPUT_DIR": "../data/arxiv",
-    "SET": "cs",
-    "FILE_PREFIX": "cs_arxiv"
+    "RAW_FILE": "../data/arxiv/arxiv_metadata_raw.xml",
+    "CSV_FILE": "../data/arxiv/arxiv_papers.csv",
+    "SET": "cs"
 }
 
 
-def setup_directories_and_files(config):
-    """Set up directories and file paths based on config"""
-    os.makedirs(config["OUTPUT_DIR"], exist_ok=True)
+def setup_config(config):
+    """Set up config parameters"""
+    # Create parent directories if they don't exist
+    for file_path in [config["RAW_FILE"], config["CSV_FILE"]]:
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
-    raw_file = os.path.join(config["OUTPUT_DIR"], f"{config['FILE_PREFIX']}_metadata_raw.xml")
-    csv_file = os.path.join(config["OUTPUT_DIR"], f"{config['FILE_PREFIX']}_papers.csv")
-
-    config["RAW_FILE"] = raw_file
-    config["CSV_FILE"] = csv_file
+    print(f"Raw file: {config['RAW_FILE']}")
+    print(f"CSV file: {config['CSV_FILE']}")
 
     end_date = datetime.now()
     start_date = end_date - timedelta(days=365 * config["N_YEARS"])
@@ -69,40 +43,49 @@ def setup_directories_and_files(config):
     return config
 
 
-CONFIG = setup_directories_and_files(CONFIG)
+CONFIG = setup_config(CONFIG)
 
 
 ##################
 
 
-def wait_retry_after(retry_state):
+def get_next_record_with_retry(data_iterator, max_attempts=10):
     """
-    Tries to parse retry after from arxiv since arxiv will give a specific
-    number. If cant find it, we will default to 30 seconds.
-
+    Get the next record with simple retry logic that respects server's Retry-After header
     """
-    exception = retry_state.outcome.exception()
-    if isinstance(exception, HTTPError) and hasattr(exception, 'response'):
-        retry_after = exception.response.headers.get('Retry-After')
-        if retry_after:
-            seconds = int(retry_after)
-            logging.info(f"Server requested retry after {seconds} seconds. Waiting...")
-            return seconds
-    return 30
+    attempts = 0
+    while attempts < max_attempts:
+        try:
+            return next(data_iterator)
+        except StopIteration:
+            # This is normal, just re-raise
+            raise
+        except (HTTPError, RequestException) as e:
+            attempts += 1
 
+            # Get the retry interval from the response headers
+            retry_after = None
+            if hasattr(e, 'response') and hasattr(e.response, 'headers'):
+                retry_after = e.response.headers.get('Retry-After')
 
-@retry(
-    retry=retry_if_exception_type((HTTPError, RequestException)),
-    stop=stop_after_attempt(10),
-    wait=wait_retry_after,
-    before_sleep=before_sleep_log(logging.getLogger(), logging.INFO)
-)
-def get_next_record(data_iterator):
-    """Get the next record with retry logic"""
-    try:
-        return next(data_iterator)
-    except HTTPError as e:
-        raise e
+            if retry_after:
+                wait_time = int(retry_after)
+                logging.info(
+                    f"Server requested retry after {wait_time} seconds (attempt {attempts}/{max_attempts}). Waiting...")
+            else:
+                wait_time = 30
+                logging.info(
+                    f"No Retry-After header found. Using default wait time of 30 seconds (attempt {attempts}/{max_attempts}).")
+
+            time.sleep(wait_time)
+
+            # If this was the last attempt, re-raise the exception
+            if attempts >= max_attempts:
+                logging.error(f"Maximum retry attempts ({max_attempts}) reached. Giving up.")
+                raise
+        except Exception as e:
+            logging.error(f"Unexpected error: {e}")
+            raise
 
 
 def download_metadata(config):
@@ -138,7 +121,7 @@ def download_metadata(config):
     with open(config["RAW_FILE"], 'w', encoding="utf-8") as f:
         while True:
             try:
-                record = get_next_record(data)
+                record = get_next_record_with_retry(data)
                 f.write(record.raw)
                 f.write('\n')
                 errors = 0
@@ -237,6 +220,7 @@ def parse_raw_data(config):
 
     logging.info("Creating DataFrame...")
     df = pd.DataFrame(list_of_dicts)
+    print(df)
 
     # Add URL and clean up categories
     logging.info("Processing categories and authors...")
