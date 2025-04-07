@@ -245,20 +245,30 @@ with open("data/tests/dvb_tests.json", "w") as f:
 with open("data/tests/dvb_all_prompts.json", "w") as f:
     json.dump(all_prompts, f, indent=2)
 
-# Create sample prompts file with a subset for manual review
-sample_size = min(10, len(all_prompts))
+
+# SAMPLES
+#######################################
+sample_size = min(21, len(all_prompts))
 sample_prompts = random.sample(all_prompts, sample_size)
 
 with open("data/tests/dvb_sample_prompts.json", "w") as f:
     json.dump(sample_prompts, f, indent=2)
 
-# Print an example prompt for review
-print("\nExample test prompt:")
-example = sample_prompts[0]
-print(f"Prompt ID: {example['prompt_id']}")
-print(f"Context-correlation pair: {example['context_correlation_pair']}")
-print(f"Number of training examples: {example['n_training_examples']}")
-print(f"Expected choice (if generalizing deep value): {example['expected_deep_value_choice']}")
-print(f"Alternative choice (if generalizing shallow preference): {example['shallow_preference_choice']}")
-print("\n--- PROMPT ---\n")
-print(example['prompt'])
+with open("debug_tests.md", "w") as md_file:
+    md_file.write("# DVB Sample Prompts Debug\n\n")
+
+    for i, prompt in enumerate(sample_prompts):
+        md_file.write(f"## Test {i + 1}\n")
+        md_file.write(f"**Context-correlation pair:** {prompt['context_correlation_pair']}\n\n")
+        md_file.write(f"**Number of training examples:** {prompt['n_training_examples']}\n\n")
+        md_file.write(f"**Expected choice (if generalizing deep value):** {prompt['expected_deep_value_choice']}\n\n")
+        md_file.write(
+            f"**Alternative choice (if generalizing shallow preference):** {prompt['shallow_preference_choice']}\n\n")
+        md_file.write("### PROMPT\n\n\n")
+        md_file.write(prompt['prompt'])
+        md_file.write("\n\n\n")
+
+        if i < len(sample_prompts) - 1:
+            md_file.write("---\n\n")
+
+print(f"All {len(sample_prompts)} prompts have been written to debug_tests.md")

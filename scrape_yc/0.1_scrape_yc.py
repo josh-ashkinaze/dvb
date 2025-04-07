@@ -144,6 +144,7 @@ def main():
                 tags[tag] += 1
         tag_df = pd.DataFrame.from_dict(tags, orient='index', columns=['count']).reset_index()
         tag_df.columns = ['tag', 'count']
+        print(f"Unique tags found: {len(tag_df)}")
         tag_df.to_json("../data/raw/yc_ai_assistant_tags.jsonl", orient='records', lines=True)
 
 
