@@ -75,10 +75,8 @@ def clean_completion(text):
     if not isinstance(text, str):
         return text
 
-    # First, standardize all newlines
     text = text.replace('\r\n', '\n').replace('\r', '\n')
 
-    # Replace multiple newlines with a single newline
     text = re.sub(r'\n{2,}', '\n', text)
 
     # Ensure there's exactly one newline after "CONTEXT:"
