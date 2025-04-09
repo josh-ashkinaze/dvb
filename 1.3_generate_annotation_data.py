@@ -21,6 +21,7 @@ from pprint import pprint
 if __name__ == "__main__":
     with open("data/clean/fixed_preferences.json") as f:
         preferences = json.load(f)
+        print(f"Loaded {len(preferences)} preference categories")
 
 
     data = []
