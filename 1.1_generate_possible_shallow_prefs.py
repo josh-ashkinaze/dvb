@@ -38,9 +38,8 @@ logging.info(f"N_PER_ITER: {N_PER_ITER}")
 prompt = """
 
 INSTRUCTIONS
-Generate a comprehensive list of preference dichotomies that people might hold. 
-
-A preference dichotomy is a pair of contrasting options or poles. 
+Generate a comprehensive list of preference dichotomies that people might hold regarding AI Agents. 
+A preference dichotomy is a pair of contrasting options or poles. Each preference dichotomy should be something that is not a deep value people have.
 
 CONSTRAINTS
 These preferences should be 
@@ -48,17 +47,9 @@ These preferences should be
 - Can vary across individuals without necessarily reflecting fundamental differences in values. It is important these things do NOT represent
 differences in values.
 - The preferences should be shallow and not deeply rooted in personality or identity. 
-- The preferences should be relevant to making choices in life, such as: 
-    - choosing between people (ex: accents, genders, ages, appearances)
-    - choosing between actions to pursue (ex: preference for day or night)
-    - Avoid preferences that are solely confined to objects (ex: "red" or "blue") and not people or actions.
 - The preferences should have clear polar opposites.
 - The preferences should be easy to understand. 
-
-EXAMPLES
-- Humor type: "sarcastic" or "silly"
-- Formality: "formal" or "informal"
-- Preferred accent: "American" or "British"
+- The preferences should be relevant to the context of AI Agents.
 
 TASK
 For each category of preferences:
@@ -88,9 +79,8 @@ logging.info(f"PROMPT: {prompt}")
 
 def completion_with_structure(
         prompt: str,
-        model: str = "gpt-4-turbo",
+        model: str = "gpt-4o",
         temperature: float = 0.7,
-        response_format: Optional[Dict] = None
 ):
     """
     Generate completions using LiteLLM with structured output support.

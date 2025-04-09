@@ -1,11 +1,26 @@
+"""
+Date: 2025-04-07
+
+Description: This script scrapes yomcinbator ai startups 
+
+Input files:
+- None
+Output files:
+- data/raw/yc_ai_assistant_companies.json: A JSON file containing the scraped YCombinator AI Assistant companies.
+- data/raw/yc_ai_assistant_tags.jsonl: A JSONL file containing the unique tags and their counts.
+"""
+
+
 import requests
 from bs4 import BeautifulSoup
 import json
-import csv
-import time
+import os
+import logging
 import re
 import pandas as pd
 
+
+logging.basicConfig(filename=f"{os.path.splitext(os.path.basename(__file__))[0]}.log", level=logging.INFO, format='%(asctime)s: %(message)s', filemode='w', datefmt='%Y-%m-%d %H:%M:%S', force=True)
 
 def scrape_yc_companies():
     """
@@ -16,7 +31,7 @@ def scrape_yc_companies():
     """
     url = "https://www.ycombinator.com/companies/industry/ai-assistant"
 
-    print(f"Scraping companies from: {url}")
+    logging.info(f"Scraping companies from: {url}")
 
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
@@ -26,7 +41,7 @@ def scrape_yc_companies():
         response = requests.get(url, headers=headers)
         response.raise_for_status()  # Raise exception for 4XX/5XX status codes
     except requests.exceptions.RequestException as e:
-        print(f"Failed to retrieve data: {e}")
+        logging.info(f"Failed to retrieve data: {e}")
         return []
 
     # Parse HTML content
@@ -48,12 +63,12 @@ def scrape_yc_companies():
         elements = soup.select(selector)
         if elements:
             company_elements = elements
-            print(f"Found {len(elements)} companies using selector: {selector}")
+            logging.info(f"Found {len(elements)} companies using selector: {selector}")
             break
 
     if not company_elements:
         company_elements = soup.select('li[class*="flex"][class*="border"]')
-        print(f"Found {len(company_elements)} companies with fallback selector")
+        logging.info(f"Found {len(company_elements)} companies with fallback selector")
 
     for company in company_elements:
         try:
@@ -114,7 +129,7 @@ def scrape_yc_companies():
                 companies_data.append(company_data)
 
         except Exception as e:
-            print(f"Error processing company: {str(e)}")
+            logging.info(f"Error processing company: {str(e)}")
 
     return companies_data
 
@@ -123,18 +138,18 @@ def save_to_json(data, filename):
     """Save scraped data to JSON file"""
     with open(filename, 'w', encoding='utf-8') as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
-    print(f"Data saved to {filename}")
+    logging.info(f"Data saved to {filename}")
 
 
 
 def main():
-    print("Starting to scrape YC AI Assistant companies...")
+    logging.info("Starting to scrape YC AI Assistant companies...")
 
     companies = scrape_yc_companies()
 
     if companies:
 
-        save_to_json(companies, "../data/raw/yc_ai_assistant_companies.json")
+        save_to_json(companies, "data/raw/yc_ai_assistant_companies.json")
 
         tags = {}
         for company in companies:
@@ -144,8 +159,8 @@ def main():
                 tags[tag] += 1
         tag_df = pd.DataFrame.from_dict(tags, orient='index', columns=['count']).reset_index()
         tag_df.columns = ['tag', 'count']
-        print(f"Unique tags found: {len(tag_df)}")
-        tag_df.to_json("../data/raw/yc_ai_assistant_tags.jsonl", orient='records', lines=True)
+        logging.info(f"Unique tags found: {len(tag_df)}")
+        tag_df.to_json("data/raw/yc_ai_assistant_tags.jsonl", orient='records', lines=True)
 
 
 
