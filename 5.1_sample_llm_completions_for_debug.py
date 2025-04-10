@@ -3,6 +3,7 @@ import pandas as pd
 import json
 import os
 import random
+from helpers import get_user_string
 
 # Read in jsons
 ###########################
@@ -49,7 +50,7 @@ with open(output_md_file, "w") as md_file:
     for i, json_data in enumerate(random_jsons):
         # Extract data
         metadata = json_data["metadata"]['correlation']
-        context = json_data['context_short']
+        context = json_data['context']['name'] + ": " + json_data['context']['activity']
         shallow_preferences = json_data['shallow_preferences']
         deep_values = json_data['deep_values']
         example = json_data['train_completion']
@@ -92,6 +93,11 @@ with open(output_md_file, "w") as md_file:
         formatted_example = formatted_example.replace("Option A:", "\nOption A:").replace("Option B:",
                                                                                           "\nOption B:").replace(
             "CHOICE:", "\nCHOICE:")
+        user_str = get_user_string( "user", i)
+
+        formatted_example = formatted_example.replace("CONTEXT: A person", f"CONTEXT: {user_str}")
+
+
 
         md_file.write(f"```\n{formatted_example}\n```\n\n")
 
