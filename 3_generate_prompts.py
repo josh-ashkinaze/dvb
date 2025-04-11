@@ -130,8 +130,8 @@ def generate_deep_value_pairs(values):
     for pair in prima_facie_pairs:
         all_pairs.append((pair[0], pair[1], 'prima_facie'))
 
-    for pair in basic_values_pairs:
-        all_pairs.append((pair[0], pair[1], 'basic_values'))
+    # for pair in basic_values_pairs:
+    #     all_pairs.append((pair[0], pair[1], 'basic_values'))
 
     return all_pairs
 
