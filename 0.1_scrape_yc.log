@@ -1,0 +1,5 @@
+2025-04-11 18:09:57: Starting to scrape YC AI Assistant companies...
+2025-04-11 18:09:57: Scraping companies from: https://www.ycombinator.com/companies/industry/ai-assistant
+2025-04-11 18:09:58: Found 100 companies using selector: li.my-2.flex.h-auto.w-full.flex-col
+2025-04-11 18:09:58: Data saved to data/raw/yc_ai_assistant_companies.json
+2025-04-11 18:09:58: Unique tags found: 83
