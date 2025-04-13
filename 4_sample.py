@@ -14,8 +14,8 @@ NOTE: Explaining the numbers here as a refresher...
 - For each, we sample 10 correlations where a correlation is a {(v1, s1)} and {(v2, s2)} grouping
     - For each correlation, we have 40 trials
 
-- Therefore, for each context we should have 400 trials
-- And in total we should have 3200 trials.
+- Therefore, for each context we should have 400 trials----10 correlations x 40 trials
+- And in total we should have 3200 trials (400 trials per 8 context)
 - [the assert statements are verifying this]
 """
 
@@ -23,6 +23,7 @@ NOTE: Explaining the numbers here as a refresher...
 import json
 import pandas as pd
 import random
+from json import JSONDecodeError
 
 
 if __name__ == "__main__":
@@ -31,11 +32,19 @@ if __name__ == "__main__":
 
     N_CONFLICTS = 10
 
-
+    # This is a very big file and if we just ran the generation script,
+    # it may not have fully written to disk yet---leading to ValueError.
     pref_templates =  "data/clean/factorial_prompt_templates.json"
 
-    with open(pref_templates, "r") as f:
-        data = json.load(f)
+    try:
+        with open(pref_templates, "r") as f:
+            data = json.load(f)
+    except JSONDecodeError:
+        print("File may not have been fully written yet. Waiting 60 seconds...")
+        import time
+        time.sleep(60)
+        with open(pref_templates, "r") as f:
+            data = json.load(f)
 
 
     df = pd.DataFrame(data)

@@ -66,7 +66,7 @@ def generate_completion_with_retry(prompt, model="gpt-4o", max_retries=MAX_RETRI
 
             print(f"Error: {e}. Retrying ({retries}/{max_retries})...")
             time.sleep(backoff_time)
-            backoff_time *= 2  # Exponential backoff
+            backoff_time *= 2
 
     return f"ERROR: Exceeded maximum retries ({max_retries})"
 
@@ -100,7 +100,7 @@ with open(sample_preferences, "r") as f:
             jsons.append(json.loads(line.strip()))
 
 
-n_cores = max(1, multiprocessing.cpu_count() - 1)
+n_cores = max(1, multiprocessing.cpu_count())
 print(f"Processing {len(jsons)} examples using {n_cores} CPU cores")
 
 results = Parallel(n_jobs=n_cores)(
