@@ -254,10 +254,8 @@ def array_stats(data, digits=2, include_ci=False):
     dict
         Dictionary containing the calculated statistics
     """
-    # Convert to numpy array if not already
     data = np.array(data)
 
-    # Calculate statistics
     mean_val = np.mean(data)
     median_val = np.median(data)
     sd_val = np.std(data, ddof=1)
@@ -267,6 +265,7 @@ def array_stats(data, digits=2, include_ci=False):
         mode_val = st.mode(data)
     except st.StatisticsError:
         # If multiple modes exist, use scipy's mode which returns the first occurrence
+        print("Multiple modes found, using the first one.")
         mode_val = stats.mode(data, keepdims=True)[0][0]
 
     result = {
@@ -285,7 +284,6 @@ def array_stats(data, digits=2, include_ci=False):
 
         bootstrap_result = bootstrap((data_reshaped,), mean_func,
                                      confidence_level=0.95,
-                                     method='BCa',
                                      random_state=42,
                                      n_resamples=10*1000)
 
