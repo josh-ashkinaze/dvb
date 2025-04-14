@@ -1,47 +1,57 @@
 #!/bin/bash
 
-# Basic script that runs everything in order with a virtual environment
-# Exit on error
+# Exit on any error
 set -e
 
-echo "============================================"
-echo "RUNNING EVERYTHING"
-echo "============================================"
+if [ -d "venv" ]; then
+    echo "Removing existing virtual environment..."
+    rm -rf venv
+fi
 
-echo "Setting up virtual environment..."
+echo "Creating new virtual environment..."
 python3 -m venv venv
+
+echo "Installing requirements..."
+venv/bin/pip install -r requirements.txt
+
+# Activate the virtual environment
 source venv/bin/activate
+echo "Virtual environment activated"
 
-# Install requirements
-echo "Installing dependencies from requirements.txt..."
-pip install -r requirements.txt
+#echo "Step 1.1: Generate possible shallow prefs"
+#python 1.1_generate_possible_shallow_prefs.py
+#
+#echo "Step 1.2: Clean shallow prefs"
+#python 1.2_clean_shallow_prefs.py
+#
+#echo "Step 1.3: Generate annotation data"
+#python 1.3_generate_shallow_annotation_data.py
 
-echo "Running data preparation scripts..."
-python 1.1_generate_possible_shallow_prefs.py
-python 1.2_clean_shallow_prefs.py
-python 1.3_generate_annotation_data.py
-
-echo "Running analysis scripts..."
-python 2.1_generate_annotation_prompts.py
-python 2_analyze_atus.py
-
-echo "Running generation scripts..."
+echo "Step 3: Generate prompts"
 python 3_generate_prompts.py
 
-echo "Running sampling scripts..."
+echo "Step 4: Sample data"
 python 4_sample.py
+
+echo "Step 5.1: Sample LLM completions for debug"
 python 5.1_sample_llm_completions_for_debug.py
+
+echo "Step 5: Get LLM completions"
 python 5_get_llm_completions.py
 
-echo "Running testing scripts..."
+echo "Step 5.1: Sample LLM completions for debug"
+python 5.1_sample_llm_completions_for_debug.py
+
+echo "Step 6: Make test sets"
 python 6_make_tests.py
+
+echo "Step 7: Run model tests"
 python 7_run_model_tests.py
+
+echo "Step 8: Number counts"
 python 8_number_counts.py
 
-echo "Running statistics with papermill..."
+echo "Step 9: Run final stats notebook"
 papermill 9_run_stats.ipynb 9_run_stats_output.ipynb
 
-# Deactivate virtual environment
-deactivate
-
-echo "Pipeline execution completed successfully!"
+echo "🏁 All steps completed successfully!"
