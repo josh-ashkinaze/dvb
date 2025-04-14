@@ -7,7 +7,8 @@ import numpy as np
 import scipy.stats as stats
 from scipy.stats import bootstrap
 import statistics as st
-
+import numpy as np
+from collections import Counter
 
 def open_file(fn):
     with open(fn, "r") as f:
@@ -155,6 +156,84 @@ def clean_vars(s, how='title'):
         return s.lower()
     elif how == 'upper':
         return s.upper()
+
+
+def categorical_stats(data, include_n=True, digits=1, sort_by='frequency', reverse=True):
+    """
+    Calculate and format statistics for categorical data.
+
+    Parameters:
+    -----------
+    data : array-like
+        The input categorical data array
+    include_n : bool, optional
+        Whether to include raw counts in the output (default: True)
+    digits : int, optional
+        Number of decimal places for percentage rounding (default: 1)
+    sort_by : str, optional
+        How to sort the results: 'frequency' (default), 'alphabetical', or 'original'
+    reverse : bool, optional
+        Whether to reverse the sort order (default: True for descending frequency)
+
+    Returns:
+    --------
+    str
+        Formatted string showing categories with percentages and optionally counts
+    dict
+        Dictionary containing the calculated statistics for programmatic use
+    """
+
+    # Convert to numpy array for consistency
+    data = np.array(data)
+
+    # Count frequencies
+    counter = Counter(data)
+    total_count = len(data)
+
+    # Calculate percentages and build results dictionary
+    result_dict = {}
+    for category, count in counter.items():
+        percentage = (count / total_count) * 100
+        result_dict[category] = {
+            'count': count,
+            'percentage': percentage,
+            'percentage_rounded': round(percentage, digits)
+        }
+
+    # Sort results according to preference
+    if sort_by == 'frequency':
+        sorted_items = sorted(result_dict.items(),
+                              key=lambda x: x[1]['count'],
+                              reverse=reverse)
+    elif sort_by == 'alphabetical':
+        sorted_items = sorted(result_dict.items(),
+                              key=lambda x: str(x[0]),
+                              reverse=reverse)
+    elif sort_by == 'original':
+        # Maintain order of first appearance in the data
+        seen = set()
+        original_order = []
+        for item in data:
+            if item not in seen:
+                seen.add(item)
+                original_order.append(item)
+        sorted_items = [(item, result_dict[item]) for item in original_order]
+    else:
+        raise ValueError("sort_by must be 'frequency', 'alphabetical', or 'original'")
+
+    # Format output string
+    result_parts = []
+    for category, stats in sorted_items:
+        if include_n:
+            part = f"{category} ({stats['percentage_rounded']:.{digits}f}%; n={stats['count']})"
+        else:
+            part = f"{category} ({stats['percentage_rounded']:.{digits}f}%)"
+        result_parts.append(part)
+
+    result_string = ", ".join(result_parts)
+
+    # Return both the formatted string and the full dictionary for programmatic use
+    return result_string, {k: v for k, v in sorted_items}
 
 
 def array_stats(data, digits=2, include_ci=False):
