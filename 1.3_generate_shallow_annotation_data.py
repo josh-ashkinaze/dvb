@@ -77,7 +77,7 @@ if __name__ == "__main__":
 
     df = pd.DataFrame(data)
     df['idx'] = [i+1 for i in range(len(df))]
-    df.to_csv("data/clean/qualtrics_loop_merge_deep_shallow.csv", index=False)
+    df.to_csv("data/clean/qualtrics_loop_merge_deep_shallow_prima.csv", index=False)
     shallow = df[df['set'] == 'shallow']
     shallow.to_csv("data/clean/qualtrics_loop_merge_shallow.csv", index=False)
 
