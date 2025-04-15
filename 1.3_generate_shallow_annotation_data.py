@@ -7,8 +7,9 @@ Inputs:
 - data/clean/fixed_preferences.json
 
 Outputs:
-- data/clean/qualtrics_loop_merge_deep_shallow.csv: Combined deep and shallow
 - data/clean/qualtrics_loop_merge_shallow.csv: Shallow only
+- data/clean/qualtrics_loop_merge_deep_shallow_prima_facie.csv: Deep and shallow for prima facie
+- data/clean/qualtrics_loop_merge_deep_shallow_basic_values.csv: Deep and shallow for basic values
 
 The structure of this is that we have a col for `idx' which is the loop and merge index. So then we will merge the qualtrics data
 on this file to get the preferences back.
@@ -34,56 +35,57 @@ if __name__ == "__main__":
         preferences = json.load(f)
         print(f"Loaded {len(preferences)} preference categories")
 
-    # load deep values
-    with open("data/clean/deep_values.json") as f:
-        deep_values = json.load(f)['prima_facie']
-        print(f"Loaded {len(deep_values)} deep values")
+        # load deep values
+        for deep_value_set in ["prima_facie", "basic_values"]:
+            with open("data/clean/deep_values.json") as f:
+                deep_values = json.load(f)[deep_value_set]
+                print(f"Loaded {len(deep_values)} deep values")
 
-    deep_pairs = list(itertools.combinations(deep_values.keys(), 2))
+            deep_pairs = list(itertools.combinations(deep_values.keys(), 2))
 
-    data = []
-    for x in preferences:
-        data_pt = {}
-        data_pt["name"] = x.replace("_", " ").title()
-        keys = list(preferences[x].keys())  # Ensure keys are converted to a list
-        name_1 = clean_string(keys[0])
-        name_1_def = preferences[x][keys[0]]  # Use the original key
+            data = []
+            for x in preferences:
+                data_pt = {}
+                data_pt["name"] = x.replace("_", " ").title()
+                keys = list(preferences[x].keys())  # Ensure keys are converted to a list
+                name_1 = clean_string(keys[0])
+                name_1_def = preferences[x][keys[0]]  # Use the original key
 
-        name_2 = clean_string(keys[1])
-        name_2_def = preferences[x][keys[1]]  # Use the original key
+                name_2 = clean_string(keys[1])
+                name_2_def = preferences[x][keys[1]]  # Use the original key
 
-        data_pt['name1'] = name_1
-        data_pt['name1_def'] = name_1_def
-        data_pt['name2'] = name_2
-        data_pt['name2_def'] = name_2_def
-        data_pt['set'] = 'shallow'
-        data.append(data_pt)
+                data_pt['name1'] = name_1
+                data_pt['name1_def'] = name_1_def
+                data_pt['name2'] = name_2
+                data_pt['name2_def'] = name_2_def
+                data_pt['set'] = 'shallow'
+                data.append(data_pt)
 
-    for x in deep_pairs:
-        data_pt = {}
-        data_pt["name"] = f"{clean_string(x[0])} or {clean_string(x[1])}"
-        name_1 = clean_string(x[0])
-        name_1_def = deep_values[x[0]]
+            for x in deep_pairs:
+                data_pt = {}
+                data_pt["name"] = f"{clean_string(x[0])} or {clean_string(x[1])}"
+                name_1 = clean_string(x[0])
+                name_1_def = deep_values[x[0]]
 
-        name_2 = clean_string(x[1])
-        name_2_def = deep_values[x[1]]
+                name_2 = clean_string(x[1])
+                name_2_def = deep_values[x[1]]
 
-        data_pt['name1'] = name_1
-        data_pt['name1_def'] = name_1_def.replace("An Agent should", "Preferring AI Agents that")
-        data_pt['name2'] = name_2
-        data_pt['name2_def'] = name_2_def.replace("An Agent should", "Preferring AI Agents that")
-        data_pt['set'] = 'deep'
-        data.append(data_pt)
+                data_pt['name1'] = name_1
+                data_pt['name1_def'] = name_1_def.replace("An Agent should", "Preferring AI Agents that")
+                data_pt['name2'] = name_2
+                data_pt['name2_def'] = name_2_def.replace("An Agent should", "Preferring AI Agents that")
+                data_pt['set'] = 'deep'
+                data.append(data_pt)
 
-    df = pd.DataFrame(data)
-    df['idx'] = [i+1 for i in range(len(df))]
-    df.to_csv("data/clean/qualtrics_loop_merge_deep_shallow_prima.csv", index=False)
-    shallow = df[df['set'] == 'shallow']
-    shallow.to_csv("data/clean/qualtrics_loop_merge_shallow.csv", index=False)
+            df = pd.DataFrame(data)
+            df['idx'] = [i+1 for i in range(len(df))]
+            df.to_csv(f"data/clean/qualtrics_loop_merge_deep_shallow_{deep_value_set}.csv", index=False)
+            shallow = df[df['set'] == 'shallow']
+            shallow.to_csv("data/clean/qualtrics_loop_merge_shallow.csv", index=False)
 
-    # samples
-    for idx, row in df.iterrows():
-        pprint(f"Row {idx}: {row.to_dict()}")
+            # samples
+            for idx, row in df.iterrows():
+                pprint(f"Row {idx}: {row.to_dict()}")
 
 
 
