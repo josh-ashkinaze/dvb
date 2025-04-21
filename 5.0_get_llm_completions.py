@@ -3,7 +3,8 @@ import os
 import time
 from dotenv import load_dotenv
 from tqdm import tqdm
-from joblib import Parallel, delayed
+from joblib import Parallel, delayed, effective_n_jobs
+
 import multiprocessing
 from litellm import completion as litellm_completion
 
@@ -100,13 +101,17 @@ with open(sample_preferences, "r") as f:
             jsons.append(json.loads(line.strip()))
 
 
-n_cores = max(1, multiprocessing.cpu_count())
-print(f"Processing {len(jsons)} examples using {n_cores} CPU cores")
+n_cores_used = effective_n_jobs(-1)
+print(f"With n_jobs=-1, joblib will use {n_cores_used} CPU cores")
 
-results = Parallel(n_jobs=n_cores)(
+print(f"Processing {len(jsons)} examples using {n_cores_used} CPU cores")
+
+results = Parallel(n_jobs=-1)(
     delayed(process_json_object)(json_obj)
     for json_obj in tqdm(jsons, desc="Generating completions")
 )
+
+
 
 with open(output_file, "w") as f:
     for result in results:
