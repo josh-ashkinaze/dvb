@@ -1,3 +1,7 @@
+
+
+
+import argparse
 from pprint import pprint
 import pandas as pd
 import json
@@ -9,8 +13,18 @@ from collections import defaultdict
 # Set seed for reproducibility
 random.seed(42)
 
-# File path
-completions_fn = "data/clean/factorial_prompt_templates_with_completions.jsonl"
+# Parse command-line arguments
+parser = argparse.ArgumentParser(description="Process LLM completions for debugging.")
+parser.add_argument("--full", action="store_true", help="Use the full dataset instead of the sample dataset.")
+args = parser.parse_args()
+
+# File path based on mode
+if args.full:
+    completions_fn = "data/clean/factorial_prompt_templates_with_completions_full.jsonl"
+    mode_suffix = "_full"
+else:
+    completions_fn = "data/clean/factorial_prompt_templates_with_completions_sample.jsonl"
+    mode_suffix = "_sample"
 
 
 def wrap_text(text, width=80):
@@ -58,12 +72,11 @@ grouped_samples = {
 # Random sample (flat 100)
 random_jsons = random.sample(jsons, 100)
 
-# Output configs
+# Output configs with dynamic filenames
 json_fns = {
-    "debug_output_random.md": random_jsons,
-    "debug_output_correlations.md": grouped_samples
+    f"debug_output_random{mode_suffix}.md": random_jsons,
+    f"debug_output_correlations{mode_suffix}.md": grouped_samples
 }
-
 
 # Main writer
 for json_fn, content in json_fns.items():

@@ -1,4 +1,4 @@
-loc = "data/clean/factorial_prompt_templates_with_completions.jsonl"
+loc = "data/clean/factorial_prompt_templates_with_completions_sample.jsonl"
 
 import json
 

@@ -1,3 +1,23 @@
+"""
+Date: 2025-04-21 17:55:08
+
+Description: Description
+
+Input files:
+
+Depending on if sample or full:
+- data/clean/factorial_prompt_templates_full.json: Full factorial prompt templates dataset
+- data/clean/factorial_prompt_templates_sample.json: Sampled dataset with 10 correlations per context and 40 trials of each one
+
+
+Output files:
+Depending on if sample or full:
+- data/clean/factorial_prompt_templates_with_completions_full.jsonl: Full dataset with LLM completions
+- data/clean/factorial_prompt_templates_with_completions_sample.jsonl: Sampled dataset with LLM completions
+"""
+
+
+import argparse
 import json
 import os
 import time
@@ -5,10 +25,8 @@ from dotenv import load_dotenv
 from tqdm import tqdm
 from joblib import Parallel, delayed, effective_n_jobs
 
-import multiprocessing
 from litellm import completion as litellm_completion
 
-# Load environment variables
 load_dotenv()
 os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
 
@@ -89,9 +107,18 @@ def process_json_object(json_obj, model="gpt-4o"):
     return result
 
 
+# Parse command-line arguments
+parser = argparse.ArgumentParser(description="Process LLM completions.")
+parser.add_argument("--full", action="store_true", help="Use the full dataset instead of the sample dataset.")
+args = parser.parse_args()
 
-sample_preferences = "data/clean/factorial_prompt_templates_sample.json"
-output_file = "data/clean/factorial_prompt_templates_with_completions.jsonl"
+# Determine mode based on arguments
+if args.full:
+    sample_preferences = "data/clean/factorial_prompt_templates_full.json"
+    output_file = "data/clean/factorial_prompt_templates_with_completions_full.jsonl"
+else:
+    sample_preferences = "data/clean/factorial_prompt_templates_sample.json"
+    output_file = "data/clean/factorial_prompt_templates_with_completions_sample.jsonl"
 
 # Read JSONL file
 jsons = []
@@ -110,8 +137,6 @@ results = Parallel(n_jobs=-1)(
     delayed(process_json_object)(json_obj)
     for json_obj in tqdm(jsons, desc="Generating completions")
 )
-
-
 
 with open(output_file, "w") as f:
     for result in results:

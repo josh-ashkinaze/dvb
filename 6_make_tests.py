@@ -1,3 +1,27 @@
+
+"""
+Date: 2025-04-21 18:03:14
+
+Description: Creates tests that we will administer to LLM
+
+Input files:
+
+Depends on arg--
+- data/clean/factorial_prompt_templates_with_completions_full.jsonl: Full dataset with LLM completions
+- data/clean/factorial_prompt_templates_with_completions_sample.jsonl: Sampled dataset with LLM completions
+
+
+Output files:
+Depends on arg--
+- data/tests/dvb_tests_full.json: Full dataset with test configurations
+- data/tests/dvb_tests_sample.json: Sampled dataset with test configurations
+
+-
+
+-
+"""
+
+
 import json
 import pandas as pd
 import random
@@ -5,6 +29,12 @@ from tqdm import tqdm
 import os
 import re
 from helpers import get_user_string
+import argparse
+
+
+parser = argparse.ArgumentParser(description="Sample or full")
+parser.add_argument("--full", action="store_true", help="Use the full dataset instead of the sample dataset.")
+args = parser.parse_args()
 
 # Set random seed for reproducibility
 random.seed(42)
@@ -12,8 +42,13 @@ random.seed(42)
 # Define the number of training examples to test
 TRAINING_SIZES = [5, 15, 30]  # Changed from 40 to 30 based on data availability
 
-# Path to the completion data
-completion_path = "data/clean/factorial_prompt_templates_with_completions.jsonl"
+if args.full:
+    completion_path = "data/clean/factorial_prompt_templates_with_completions_full.jsonl"
+    suffix = "full"
+else:
+    completion_path = "data/clean/factorial_prompt_templates_with_completions_sample.jsonl"
+    suffix = "sample"
+
 
 # Create output directory
 os.makedirs("data/tests", exist_ok=True)
@@ -244,11 +279,11 @@ print(f"Created {len(tests)} test configurations")
 print(f"Generated {len(all_prompts)} individual test prompts")
 
 # Save the tests
-with open("data/tests/dvb_tests.json", "w") as f:
+with open(f"data/tests/dvb_tests_{suffix}.json", "w") as f:
     json.dump(tests, f, indent=2)
 
 # Save all prompts
-with open("data/tests/dvb_all_prompts.json", "w") as f:
+with open(f"data/tests/dvb_all_prompts_{suffix}.json", "w") as f:
     json.dump(all_prompts, f, indent=2)
 
 
@@ -257,10 +292,10 @@ with open("data/tests/dvb_all_prompts.json", "w") as f:
 sample_size = min(21, len(all_prompts))
 sample_prompts = random.sample(all_prompts, sample_size)
 
-with open("data/tests/dvb_sample_prompts.json", "w") as f:
+with open(f"data/tests/dvb_sample_prompts_{suffix}.json", "w") as f:
     json.dump(sample_prompts, f, indent=2)
 
-with open("debug_tests.md", "w") as md_file:
+with open(f"debug_tests_{suffix}.md", "w") as md_file:
     md_file.write("# DVB Sample Prompts Debug\n\n")
 
     for i, prompt in enumerate(sample_prompts):
@@ -288,4 +323,4 @@ with open("debug_tests.md", "w") as md_file:
         if i < len(sample_prompts) - 1:
             md_file.write("---\n\n")
 
-print(f"All {len(sample_prompts)} prompts have been written to debug_tests.md")
+print(f"All {len(sample_prompts)} prompts have been written to debug_tests_{suffix}.md")

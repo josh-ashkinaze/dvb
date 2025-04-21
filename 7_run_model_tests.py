@@ -11,13 +11,19 @@ import concurrent.futures
 from concurrent.futures import ThreadPoolExecutor
 import logging
 import traceback
+import argparse
 
 load_dotenv()
 
+parser = argparse.ArgumentParser(description="Run model tests for Deep Value Benchmark.")
+parser.add_argument("--full", action="store_true", help="Use the full dataset instead of the sample dataset.")
+args = parser.parse_args()
+suffix = "full" if args.full else "sample"
+
 MODELS = ["gemini/gemini-2.0-flash", "gpt-3.5-turbo", "gpt-4o-mini"]
 MAX_TESTS = None  # Set to a number to limit tests (for testing), None for all tests
-TEST_FILE = "data/tests/dvb_all_prompts.json"
-OUTPUT_DIR = "data/results"
+TEST_FILE = f"data/tests/dvb_all_prompts_{suffix}.json"
+OUTPUT_DIR = "data/results/"
 N_WORKERS = max(1, multiprocessing.cpu_count() - 1)  # Always use CPU count - 1
 
 # Configure logging
@@ -175,7 +181,7 @@ for model_name in MODELS:
 
     # Save model-specific results
     model_df = pd.DataFrame(model_results)
-    model_output_path = os.path.join(OUTPUT_DIR, f"dvb_results_{model_name.replace('/', '_')}.csv")
+    model_output_path = os.path.join(OUTPUT_DIR, f"dvb_results_{model_name.replace('/', '_')}_{suffix}.csv")
     model_df.to_csv(model_output_path, index=False)
     logging.info(f"Saved results for {model_name} to {model_output_path}")
 
@@ -208,7 +214,7 @@ for model_name in MODELS:
             })
 
 summary_df = pd.DataFrame(summary_data)
-summary_path = os.path.join(OUTPUT_DIR, "dvb_summary.csv")
+summary_path = os.path.join(OUTPUT_DIR, f"dvb_summary_{suffix}.csv")
 summary_df.to_csv(summary_path, index=False)
 logging.info(f"Saved summary results to {summary_path}")
 

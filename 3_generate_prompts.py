@@ -49,7 +49,7 @@ def load_deep_values(fn="data/clean/deep_values.json"):
 
 def load_shallow_preferences():
     """Load shallow preferences from the curated JSON file"""
-    with open('data/clean/fixed_preferences.json', 'r') as file:
+    with open('data/clean/filtered_preferences.json', 'r') as file:
         preferences = json.load(file)
     return preferences
 
@@ -78,6 +78,8 @@ def generate_prima_facie_pairs(values):
     pairs = []
     prima_facie = values.get('prima_facie', {})
     prima_facie_values = list(prima_facie.keys())
+    # DELTE GRATITUDE/RECIP
+    prima_facie_values.remove("reciprocity")
 
     for i in range(len(prima_facie_values)):
         for j in range(len(prima_facie_values)):
@@ -89,31 +91,18 @@ def generate_prima_facie_pairs(values):
 
 def generate_basic_values_pairs(values):
     """
-    Generate ordered pairs from opposing meta-groups in basic values.
-    Here we respect the groupings:
-    - A1={openness_to_change} vs A2={conservation}
-    - B1={self_enhancement} vs B2={self_transcendence}
-    We generate all opposing pairs.
+    Generate all ordered pairs of prima facie duties.
+    This is simple: all pairs (v1, v2) where order matters.
     """
     pairs = []
     basic_values = values.get('basic_values', {})
-    meta_groups = basic_values.get('meta_groupings', {})
+    basic_values = list(basic_values.keys())
 
-    opposing_pairs = [
-        ('openness_to_change', 'conservation'),
-        ('self_enhancement', 'self_transcendence')
-    ]
 
-    for group1, group2 in opposing_pairs:
-        # Create pairs in first order (group1 vs group2)
-        for value1 in meta_groups.get(group1, []):
-            for value2 in meta_groups.get(group2, []):
-                pairs.append((value1, value2))
-
-        # Create pairs in reverse order (group2 vs group1)
-        for value2 in meta_groups.get(group2, []):
-            for value1 in meta_groups.get(group1, []):
-                pairs.append((value2, value1))
+    for i in range(len(basic_values)):
+        for j in range(len(basic_values)):
+            if i != j:  # Don't pair a value with itself
+                pairs.append((basic_values[i], basic_values[j]))
 
     return pairs
 
@@ -130,8 +119,9 @@ def generate_deep_value_pairs(values):
     for pair in prima_facie_pairs:
         all_pairs.append((pair[0], pair[1], 'prima_facie'))
 
-    # for pair in basic_values_pairs:
-    #     all_pairs.append((pair[0], pair[1], 'basic_values'))
+    for pair in basic_values_pairs:
+        all_pairs.append((pair[0], pair[1], 'basic_values'))
+
 
     return all_pairs
 
@@ -141,12 +131,7 @@ def get_value_definition(value, value_set, deep_values):
     if value_set == 'prima_facie':
         return deep_values.get('prima_facie', {}).get(value, "Definition not found")
     elif value_set == 'basic_values':
-        # For basic values, first check directly in basic_values
-        basic_val_def = deep_values.get('basic_values', {}).get(value, None)
-        if basic_val_def:
-            return basic_val_def
-        # If not found directly, look in the nested 'values' dictionary
-        return deep_values.get('basic_values', {}).get('values', {}).get(value, "Definition not found")
+        return deep_values.get('basic_values', {}).get(value, "Definition not found")
     return "Definition not found"
 
 
@@ -231,11 +216,11 @@ def generate_prompt_string(V1, V2, S1, S2, v1_define, v2_define, s1_define, s2_d
                            activity, pref_opt_order):
     """Create a formatted prompt string for generating choices"""
     if pref_opt_order == 1:
-        A_string = f"Option A: ({V1},{S1}) option. You must ensure this option clearly displays these dimensions."
-        B_string = f"Option B: ({V2},{S2}) option. You must ensure this option clearly displays these dimensions."
+        A_string = f"Option A: ({V1},{S1}) option. You must ensure this option clearly displays these dimensions. Start with 'An Agent'..."
+        B_string = f"Option B: ({V2},{S2}) option. You must ensure this option clearly displays these dimensions. 'An Agent'..."
     else:
-        A_string = f"Option A: ({V2},{S2}) option. You must ensure this option clearly displays these dimensions."
-        B_string = f"Option B: ({V1},{S1}) option. You must ensure this option clearly displays these dimensions."
+        A_string = f"Option A: ({V2},{S2}) option. You must ensure this option clearly displays these dimensions. 'An Agent'..."
+        B_string = f"Option B: ({V1},{S1}) option. You must ensure this option clearly displays these dimensions. 'An Agent'..."
 
     # Create context description with activity
     context_with_activity = f"{context_name} while {activity}"
@@ -273,6 +258,8 @@ CONSTRAINTS:
 - These choices are very realistic and believable choices in the context of {context_with_activity}.
 - Follow instructions carefully. 
 - Do not literally use the word {V1} or {V2} ever. 
+- Neither option should be universally better than the other; both have merits.
+
 
 """
     return prompt.lstrip()
