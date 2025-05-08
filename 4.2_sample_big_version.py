@@ -5,18 +5,16 @@ Input files:
 - data/clean/factorial_prompt_templates.json: Full factorial prompt templates dataset
 
 Output files:
-- data/clean/factorial_prompt_templates_sample.json: Sampled dataset with 10 correlations per context and 40 trials of each one
+- data/clean/factorial_prompt_templates_final.json: Sampled dataset with 100 correlations per context and 40 trials of each one (40 * 100 * 8 = 32000 completions)
 
 
 NOTE: Explaining the numbers here as a refresher...
 
 - We have 8 contexts
-- For each, we sample 10 correlations where a correlation is a {(v1, s1)} and {(v2, s2)} grouping
+- For each, we sample 100 correlations where a correlation is a {(v1, s1)} and {(v2, s2)} grouping
     - For each correlation, we have 40 trials
 
-- Therefore, for each context we should have 400 trials----10 correlations x 40 trials
-- And in total we should have 3200 trials (400 trials per 8 context)
-- [the assert statements are verifying this]
+- So, in total we have 8 * 100 * 40 = 32000 trials
 """
 
 
@@ -24,23 +22,28 @@ import json
 import pandas as pd
 import random
 from json import JSONDecodeError
+import logging 
+import os
+
+
+logging.basicConfig(filename=f"{os.path.splitext(os.path.basename(__file__))[0]}.log", level=logging.INFO, format='%(asctime)s: %(message)s', filemode='w', datefmt='%Y-%m-%d %H:%M:%S', force=True)
+
+
 
 
 if __name__ == "__main__":
 
     random.seed(42)
 
-    N_CONFLICTS = 10
-
-    # This is a very big file and if we just ran the generation script,
-    # it may not have fully written to disk yet---leading to ValueError.
+    # # This is a very big file and if we just ran the generation script,
+    # # it may not have fully written to disk yet---leading to ValueError.
     pref_templates =  "data/clean/factorial_prompt_templates.json"
 
     try:
         with open(pref_templates, "r") as f:
             data = json.load(f)
     except JSONDecodeError:
-        print("File may not have been fully written yet. Waiting 60 seconds...")
+        logging.info("File may not have been fully written yet. Waiting 60 seconds...")
         import time
         time.sleep(60)
         with open(pref_templates, "r") as f:
@@ -49,34 +52,42 @@ if __name__ == "__main__":
 
     df = pd.DataFrame(data)
 
-    df['deep_less_preferred'] = df['metadata'].apply(lambda x: x['deep_values']['less_preferred'])
-    df['deep_preferred'] = df['metadata'].apply(lambda x: x['deep_values']['preferred'])
-    df['deep_dichotomy'] = df.apply(
-        lambda row: " - ".join(sorted([row['deep_preferred'], row['deep_less_preferred']])),
-        axis=1
-    )
-    unique_metadata = df['deep_dichotomy'].unique()
-    print(f"Unique metadata: {len(unique_metadata)}")
+    df['correlation'] = df['metadata'].apply(lambda x: x['correlation'])
+    logging.info("unique correlations: %d", len(df['correlation'].unique()))
+    df['context'] = df['context'].apply(lambda x: x['name'])
+    logging.info("unique contexts: %d", len(df['context'].unique()))
 
 
-    dfs = []
-
+    samples = []
     counter = 0
-    for context in df['context_short'].unique(): # 8 contexts
+    import numpy as np
+    for context in df['context'].unique(): #8 contexts
+        sample_correlations = np.random.choice(df['correlation'].unique(), 100, replace=False)
+        # 100 (v1, v2) vs (s1, s2) pairs
+        # Each of (context, v1, v2, s1, s2) should appear 40 times
+        # So we should have in total: 8 * 100 * 40 = 32000
         counter += 1
-        for deep_dichotomy in df['deep_dichotomy'].unique(): # 15 prima facie plus 10 basic values
-            counter+=1
-            context_df = df[df['context_short'] == context]
-            print("length of context_df", len(context_df))
-            context_df = context_df[context_df['deep_dichotomy']==deep_dichotomy].sample(1, random_state=counter)
-            dfs.append(context_df)
+        temp_df = df[df['context'] == context]
+        temp_df = temp_df[temp_df['correlation'].isin(sample_correlations)]
+        samples.append(temp_df)
 
-    sample_df = pd.concat(dfs)
-    print(len(sample_df)) # Should be 3200 b/c we have (8 contexts x 10 correlations x 40 examples)
-    assert len(sample_df) == 3200, "Sample size is off!!! Check code"
-    sample_df.to_json("data/clean/factorial_prompt_templates_final.json", orient="records", lines=True)
+    sample_df = pd.concat(samples)
+    logging.info(len(sample_df))
 
 
+    ############## ASSERTIONS TO MAKE SURE DATA FORMAT CORRECT ##############
+    sample_df['context_correlation'] = sample_df.apply(lambda x: f"{x['context']} - {x['correlation']}", axis=1)
+
+    assert len(sample_df) == 32000, "Sample size is off!!! Check code"
+
+    assert len(sample_df['context'].unique()) == 8, "Context size is off!!! Check code"
+
+    context_correlation_counts = sample_df['context_correlation'].value_counts().to_list()
+    assert all([x == 40 for x in context_correlation_counts]), "Context correlation counts are off!!! Check code"
+
+
+    sample_df.to_json("data/clean/factorial_prompt_templates_full.json", orient="records", lines=True)
+    
 
 
 

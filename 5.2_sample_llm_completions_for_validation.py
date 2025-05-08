@@ -31,6 +31,9 @@ def extract_scenarios(text_content):
         list: A list of dictionaries with 'context', 'choice_a', 'choice_b', and 'chosen' fields
     """
     # Split the content by the delimiter to get individual scenarios
+    text_content = text_content.replace("**Option A**", "Option A")
+    text_content = text_content.replace("**Option B**", "Option B")
+    text_content = text_content.replace("**CONTEXT**", "CONTEXT")
     scenarios = text_content.split('--')
 
     # Create a list to store the parsed data
@@ -165,8 +168,8 @@ for csv_fn, content in csvs.items():
                     "shallow_other_def_str": json_data['shallow_preferences']['less_preferred_definition'],
                     "deep_value_pref_name_str": json_data['deep_values']['preferred'].replace("_", " "),
                     "deep_value_pref_def_str": json_data['deep_values']['preferred_definition'].replace("_", " "),
-                    "deep_value_other_name_str": json_data['deep_values']['less_preferred'],
-                    "deep_value_other_def_str": json_data['deep_values']['less_preferred_definition'],
+                    "deep_value_other_name_str": json_data['deep_values']['less_preferred'].replace("_", " "),
+                    "deep_value_other_def_str": json_data['deep_values']['less_preferred_definition'].replace("_", " "),
                     "choice_a_str": choice_a_str,
                     "choice_b_str": choice_b_str,
                     "choice_opt_str": choice_opt_str,
@@ -174,6 +177,8 @@ for csv_fn, content in csvs.items():
                 }
                 data.append(data_pt)
             except Exception as e:
+                print("extracted completion on error", c)
+                print(f"Error processing JSON data: {example}")
                 print(f"Error processing JSON data: {e}")
                 continue
         df = pd.DataFrame(data)
