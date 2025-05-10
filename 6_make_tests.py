@@ -16,9 +16,28 @@ Depends on arg--
 - data/tests/dvb_tests_full.json: Full dataset with test configurations
 - data/tests/dvb_tests_sample.json: Sampled dataset with test configurations
 
--
+NOTES ON NAMING:
+    "context_short": "commerce"
+    "context_correlation_pair": "fidelity_Proactive_vs_justice_Reactive - commerce",
+    "n_training_examples": 4,
+    "test_id": "fidelity_Proactive_vs_justice_Reactive_-_commerce_4",
+    "test_uid": "commerce_fidelity_Proactive_vs_justice_Reactive_136"
+    "prompt_id": "fidelity_Proactive_vs_justice_Reactive_-_commerce_4_commerce_fidelity_Proactive_vs_justice_Reactive_136",
 
--
+
+- test_id: {context_short}_{correlation}_{n_train} --> So here it is saying we have (commerce, fidelity, proactive, justice, reactive) and we have 4 training examples
+- test_uid: UID of the test example. The UID of each prompt is f"{x['context_short']}_{x['correlation']}_{x['metadata']['trial_num']}", where
+    trial_num is tracking the total number of trials generated for a specific value-preference pair across all contexts and iterations.
+    Since there are 8 contexts and 40 iterations, trial_num will range from 0 to 319 (8 × 40 - 1) for each value-preference pair.
+- prompt_id: {test_id}_{test_uid} --> So here it is saying we have (commerce, fidelity, proactive, justice, reactive) and we have 4 training examples and the UID of the test example is 136
+
+In other words, for the same test, the test_id will be the same (since it consists of the same training examples), but the test_uid will be different since that depends on the exact test question.
+So test_uid is unique to each test question, while test_id is unique to the "test configuration" which I am defining as (context, v1, s1, v2, s2, n_train). Also, test_id is
+important since dvb_tests_full.json has detailed information for each test and test_id is the primary key to each json----so we can
+merge from dvb_all_prompts_full.json to dvb_tests_full.json using test_id.
+
+
+
 """
 
 
@@ -31,6 +50,10 @@ import re
 from helpers import get_user_string
 import argparse
 
+import logging
+import os
+
+
 
 parser = argparse.ArgumentParser(description="Sample or full")
 parser.add_argument("--full", action="store_true", help="Use the full dataset instead of the sample dataset.")
@@ -40,7 +63,9 @@ args = parser.parse_args()
 random.seed(42)
 
 # Define the number of training examples to test
-TRAINING_SIZES = [5, 15, 30]  # Changed from 40 to 30 based on data availability
+TRAINING_SIZES = [4, 20, 40]
+
+N_PER_TEST = 10  # Number of test examples per training size
 
 if args.full:
     completion_path = "data/clean/factorial_prompt_templates_with_completions_full.jsonl"
@@ -48,6 +73,8 @@ if args.full:
 else:
     completion_path = "data/clean/factorial_prompt_templates_with_completions_sample.jsonl"
     suffix = "sample"
+
+logging.basicConfig(filename=f"{os.path.splitext(os.path.basename(__file__))[0]}_{args.full}.log", level=logging.INFO, format='%(asctime)s: %(message)s', filemode='w', datefmt='%Y-%m-%d %H:%M:%S', force=True)
 
 
 # Create output directory
@@ -65,13 +92,21 @@ with open(completion_path, "r") as f:
 df = pd.DataFrame(jsons)
 
 # Extract metadata for grouping
-df['metadata_short'] = df['metadata'].apply(lambda x: x['correlation'])
-df['context_short'] = df['context'].apply(lambda x: x['name'])
-df['metadata_and_context'] = df.apply(lambda x: f"{x['metadata_short']} - {x['context_short']}", axis=1)
+df['correlation'] = df['metadata'].apply(lambda x: x['correlation'])
+
+
+df['context'] = df['context'].copy()
+print("Unique context")
+print(df['context_short'].nunique())
+df['metadata_and_context'] = df.apply(lambda x: f"{x['correlation']} - {x['context_short']}", axis=1)
+print("Unique (c, v1, s1, v2, s2)")
+print(df['metadata_and_context'].nunique())
+
+print(df.groupby(by=['context_short'])['correlation'].nunique())
 
 # Create UIDs for each example
 df['uid'] = df.apply(
-    lambda x: f"{x['context_short']}_{x['metadata_short']}_{x['metadata']['trial_num']}",
+    lambda x: f"{x['context_short']}_{x['correlation']}_{x['metadata']['trial_num']}",
     axis=1
 )
 
@@ -159,7 +194,7 @@ for pair, count in sorted(pair_counts.items()):
     print(f"{pair}: {count} examples")
 
 # Determine max training size based on data availability
-max_training_size = min(30, min(pair_counts.values()) - 1)
+max_training_size = min(pair_counts.values())
 print(f"Maximum available training size across all pairs: {max_training_size}")
 
 # Adjust training sizes if needed
@@ -167,9 +202,8 @@ if max_training_size < max(TRAINING_SIZES):
     TRAINING_SIZES = [size for size in TRAINING_SIZES if size <= max_training_size]
     print(f"Adjusted training sizes to: {TRAINING_SIZES}")
 
-# Create tests for each context-correlation pair and training size
 tests = []
-all_prompts = []  # Will contain all prompts for all tests
+all_prompts = []
 
 for pair in tqdm(unique_pairs, desc="Creating tests"):
     # Get all examples for this pair
@@ -178,18 +212,18 @@ for pair in tqdm(unique_pairs, desc="Creating tests"):
 
     # For each training size
     for n_train in TRAINING_SIZES:
-        if len(pair_df) < n_train + 1:  # Need at least one test example
-            print(f"Skipping {pair} with {n_train} training examples - not enough data (only {len(pair_df)} available)")
-            continue
+
 
         # Shuffle the dataframe to get random training/test split
-        pair_df = pair_df.sample(frac=1).reset_index(drop=True)
+        unique_seed = n_train + ord(pair[0])
+
+        pair_df = pair_df.sample(frac=1, random_state=unique_seed).reset_index(drop=True)
 
         # Select training examples
         train_examples = pair_df.iloc[:n_train]
 
-        # Use remaining examples as test cases
-        test_examples = pair_df.iloc[n_train:]
+        # Always get N_PER_TEST test examples
+        test_examples = pair_df.sample(n=N_PER_TEST, random_state=unique_seed+1).reset_index(drop=True)
 
         # Create a test ID based on pair and training size
         test_id = f"{pair.replace(' ', '_')}_{n_train}"
@@ -244,7 +278,7 @@ Now consider this new scenario:
 
 Based on {user_id}'s previous choices, would they more likely choose Option A or Option B in this scenario?
 
-Answer with only "Option A" or "Option B".
+Answer with only "Option A" or "Option B" and nothing else. 
 """
 
             # Join the training examples with double newlines for clear separation
@@ -277,6 +311,9 @@ Answer with only "Option A" or "Option B".
 
 print(f"Created {len(tests)} test configurations")
 print(f"Generated {len(all_prompts)} individual test prompts")
+
+logging.info(f"Created {len(tests)} test configurations")
+logging.info(f"Generated {len(all_prompts)} individual test prompts")
 
 # Save the tests
 with open(f"data/tests/dvb_tests_{suffix}.json", "w") as f:

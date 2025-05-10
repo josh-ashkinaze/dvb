@@ -20,8 +20,26 @@ parser.add_argument("--full", action="store_true", help="Use the full dataset in
 args = parser.parse_args()
 suffix = "full" if args.full else "sample"
 
-MODELS = ["gemini/gemini-2.0-flash", "gpt-3.5-turbo", "gpt-4o-mini"]
-MAX_TESTS = None  # Set to a number to limit tests (for testing), None for all tests
+MODELS = ["gemini/gemini-2.0-flash",
+          "gemini/gemini-2.0-flash-lite",
+          "anthropic/claude-3-5-haiku-20241022",
+          "llama3.1-8b",
+          "llama3.1-70b",
+          "gpt-3.5-turbo-0125",
+          "gpt-4.1-nano-2025-04-14",
+          "gpt-4.1-mini-2025-04-14",
+          "gpt-4.1-2025-04-14"]
+
+
+MODELS = ["gemini/gemini-2.0-flash",
+          "gemini/gemini-2.0-flash-lite",
+          "gpt-3.5-turbo-0125",
+          "gpt-4.1-nano-2025-04-14",
+          "gpt-4.1-mini-2025-04-14",
+          "gpt-4.1-2025-04-14"
+          ]
+
+MAX_TESTS = 2000  # Set to a number to limit tests (for testing), None for all tests
 TEST_FILE = f"data/tests/dvb_all_prompts_{suffix}.json"
 OUTPUT_DIR = "data/results/"
 N_WORKERS = max(1, multiprocessing.cpu_count() - 1)  # Always use CPU count - 1
