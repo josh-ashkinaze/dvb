@@ -41,6 +41,7 @@ parser.add_argument("--models", nargs="+", choices=ALL_MODELS, default=ALL_MODEL
                     help="Specific models to test (default: all models)")
 args = parser.parse_args()
 suffix = "full" if args.full else "sample"
+SAMPLE_SIZE_STR = "" if not args.max_tests else f"_{args.max_tests}_"
 
 MAX_TESTS = args.max_tests
 MODELS = args.models
@@ -62,7 +63,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler(f"dvb_test_run_{DATETIME_STR}.log"),
+        logging.FileHandler(f"dvb_test_run_{DATETIME_STR}{SAMPLE_SIZE_STR}.log"),
         logging.StreamHandler()
     ]
 )
@@ -228,7 +229,7 @@ for model_name in MODELS:
     # Save model-specific results
     model_df = pd.DataFrame(model_results)
     model_output_path = os.path.join(OUTPUT_DIR,
-                                     f"dvb_results_{DATETIME_STR}_{model_name.replace('/', '_')}_{suffix}.csv")
+                                     f"dvb_results_{DATETIME_STR}{SAMPLE_SIZE_STR}{model_name.replace('/', '_')}_{suffix}.csv")
     model_df.to_csv(model_output_path, index=False)
     logging.info(f"Saved results for {model_name} to {model_output_path}")
 
