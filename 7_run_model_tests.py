@@ -31,15 +31,21 @@ MODELS = ["gemini/gemini-2.0-flash",
           "gpt-4.1-2025-04-14"]
 
 
-MODELS = ["gemini/gemini-2.0-flash",
-          "gemini/gemini-2.0-flash-lite",
-          "gpt-3.5-turbo-0125",
+MODELS = ["gemini/gemini-2.0-flash-lite",
+          "gemini/gemini-2.0-flash",
+          "replicate/meta/meta-llama-3-70b-instruct",
+          "replicate/meta/meta-llama-3-8b-instruct",
+          "gpt-4o-mini-2024-07-18",
+          "gpt-4o-2024-08-06",
           "gpt-4.1-nano-2025-04-14",
           "gpt-4.1-mini-2025-04-14",
           "gpt-4.1-2025-04-14"
           ]
 
-MAX_TESTS = 2000  # Set to a number to limit tests (for testing), None for all tests
+
+
+
+MAX_TESTS = 1000  # Set to a number to limit tests (for testing), None for all tests
 TEST_FILE = f"data/tests/dvb_all_prompts_{suffix}.json"
 OUTPUT_DIR = "data/results/"
 N_WORKERS = max(1, multiprocessing.cpu_count() - 1)  # Always use CPU count - 1
