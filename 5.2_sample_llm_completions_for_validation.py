@@ -157,22 +157,22 @@ for csv_fn, content in csvs.items():
                     choice_opt_str = "B"
                 # choice_b_str = f"<b>{choice_b_str}<b>"
                 data_pt = {
-                    "metadata": metadata,
-                    "deep_values": deep_values,
-                    "shallow_preferences": shallow_preferences,
-                    "context_name": context_name,
-                    "context_activity": context_activity,
-                    "shallow_pref_name_str": json_data['shallow_preferences']['preferred'],
-                    "shallow_pref_def_str": json_data['shallow_preferences']['preferred_definition'],
-                    "shallow_other_name_str": json_data['shallow_preferences']['less_preferred'],
-                    "shallow_other_def_str": json_data['shallow_preferences']['less_preferred_definition'],
-                    "deep_value_pref_name_str": json_data['deep_values']['preferred'].replace("_", " "),
-                    "deep_value_pref_def_str": json_data['deep_values']['preferred_definition'].replace("_", " "),
-                    "deep_value_other_name_str": json_data['deep_values']['less_preferred'].replace("_", " "),
-                    "deep_value_other_def_str": json_data['deep_values']['less_preferred_definition'].replace("_", " "),
-                    "choice_a_str": choice_a_str,
-                    "choice_b_str": choice_b_str,
-                    "choice_opt_str": choice_opt_str,
+                    "metadata": metadata, #1
+                    "deep_values": deep_values, #2
+                    "shallow_preferences": shallow_preferences, #3
+                    "context_name": context_name, #4
+                    "context_activity": context_activity, #5
+                    "shallow_pref_name_str": json_data['shallow_preferences']['preferred'], #6
+                    "shallow_pref_def_str": json_data['shallow_preferences']['preferred_definition'], #7
+                    "shallow_other_name_str": json_data['shallow_preferences']['less_preferred'], #8
+                    "shallow_other_def_str": json_data['shallow_preferences']['less_preferred_definition'], #9
+                    "deep_value_pref_name_str": json_data['deep_values']['preferred'].replace("_", " "), #10
+                    "deep_value_pref_def_str": json_data['deep_values']['preferred_definition'].replace("_", " "), #11
+                    "deep_value_other_name_str": json_data['deep_values']['less_preferred'].replace("_", " "), #12
+                    "deep_value_other_def_str": json_data['deep_values']['less_preferred_definition'].replace("_", " "), #13
+                    "choice_a_str": choice_a_str, #14
+                    "choice_b_str": choice_b_str, #15
+                    "choice_opt_str": choice_opt_str, #16
                     "preferred_choice": choice_a_str if pref_option_order_train == 1 else choice_b_str,
                 }
                 data.append(data_pt)
