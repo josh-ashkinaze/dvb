@@ -30,6 +30,10 @@ if __name__ == "__main__":
 
 
     df = pd.read_csv('data/raw/dvb_cb_test.csv')
+    print(df.columns)
+
+    df = df.iloc[2:]
+    df = df[df['Finished']=='True']
 
     data = []
     for idx, row in df.iterrows():
@@ -87,4 +91,12 @@ if __name__ == "__main__":
     p = 0.5
 
     print(f"Binomial test: {binomtest(k, n, p)}")
+
+    print("total participants")
+    print(df['pid'].nunique())
+
+
+
+
+
 
