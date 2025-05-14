@@ -31,6 +31,8 @@ if __name__ == "__main__":
 
     df = pd.read_csv('data/raw/dvb_guess_which.csv')
     df = df.iloc[2:]
+    df = df[df['Finished']=='True']
+
 
     data = []
     for idx, row in df.iterrows():
