@@ -100,12 +100,12 @@
 ## not the sample since cb_test worked out
 #######################################################
 #######################################################
-#python3 6_make_tests.py
+# python3 6_make_tests.py
 # 7.1_run_model_tests.sh
 # 7.2_run_value_query.sh
+# 9_run_stats_nb.ipynb
 
-# 5.4_analyze_guess_which.py
-#python3 run_model_tests.py
+
 #
 #
 #
