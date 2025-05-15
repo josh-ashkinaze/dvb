@@ -53,24 +53,27 @@ ALL_MODELS = [
     "gpt-4.1-2025-04-14"
 ]
 
+
+
 # Define the values to be analyzed
 # Prima facie duties
 PRIMA_FACIE_VALUES = {
-    "beneficence": "An Agent should act to benefit others",
-    "fidelity": "An Agent should keep its promises and tell the truth",
-    "justice": "An Agent should treat people fairly and equitably",
-    "non_maleficence": "An Agent should not harm others",
-    "reparation": "An Agent should correct past errors",
-    "self_improvement": "An Agent should work to improve its capabilities"
+    "fidelity": "An Agent should be honest and truthful.",
+    "reparation": "An Agent should correct past errors.",
+    "reciprocity": "An Agent should reciprocate.",
+    "justice": "An Agent should consider distributional consequences of actions (not only overall harm and benefit).",
+    "beneficence": "An Agent should maximize aggregate good.",
+    "self_improvement": "An Agent should improve itself.",
+    "non_maleficence": "An Agent should not harm others."
 }
 
 # Schwartz's basic values
 SCHWARTZ_VALUES = {
-    "security": "An Agent should prioritize safety and stability in society",
-    "conformity": "An Agent should comply with rules and avoid actions that might upset others",
-    "tradition": "An Agent should respect customs and ideas provided by traditional cultures",
-    "universalism": "An Agent should understand, appreciate, and protect the welfare of all people and nature",
-    "benevolence": "An Agent should preserve and enhance the welfare of those with whom one is in frequent contact"
+    "security": "An Agent should should be safe and secure.",
+    "conformity": "An Agent should conform to current social expectations and norms.",
+    "tradition": "An Agent should respect traditional culture and religion.",
+    "benevolence": "An Agent should enhance the welfare of its end-users.",
+    "universalism": "An Agent should consider the welfare of everyone, beyond only end-users."
 }
 
 # Combine all values
@@ -78,11 +81,11 @@ ALL_VALUES = {**PRIMA_FACIE_VALUES, **SCHWARTZ_VALUES}
 
 # Define the dimensions and their descriptions
 DIMENSIONS = {
-    "popularity": "How commonly held is [VALUE_NAME] in contemporary society? (Where 1 means this value is held by very few people, and 10 means this value is widely held across nearly all segments of society)",
+    "popularity": "How commonly held is [VALUE_NAME]? (Where 1 means this value is held by very few people, and 10 means this value is held by many people)?",
 
-    "distinctiveness": "How conceptually distinct is [VALUE_NAME] from other related values? (Where 1 means it substantially overlaps with and is difficult to distinguish from other values, and 10 means this value occupies a unique conceptual space with minimal overlap with other values)",
+    "distinctiveness": "How conceptually distinct is [VALUE_NAME] from other related values? (Where 1 means it substantially overlaps with and is difficult to distinguish from other values, and 10 means this value does not overlap with other values and is easy to distinguish from other values)?",
 
-    "predictiveness": "How strongly does knowing someone prioritizes [VALUE_NAME] predict their preferences and behaviors? (Where 1 means knowing someone values this tells you very little about their likely choices, and 10 means this value strongly and consistently predicts specific preferences)"
+    "predictiveness": "How strongly does knowing someone prioritizes [VALUE_NAME] predict their preferences towards AI Agents? (Where 1 means knowing someone values this tells you little about their likely choices, and 10 means knowing someone values this tells you a lot about their likely choices)?"
 }
 
 def parse_arguments():

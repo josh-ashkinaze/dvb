@@ -12,6 +12,6 @@ for dimension in predictiveness popularity distinctiveness; do
       gpt-4.1-2025-04-14 \
     --dimension "$dimension" \
     --n_iters 10 \
-    --output_dir data/results/value_commonality
+    --output_dir data/results/fixed/value_commonality
   
 done
