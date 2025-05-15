@@ -91,6 +91,7 @@
 #python3 5.0_get_llm_completions.py --full
 #python3 5.1_sample_llm_completions_for_debug.py -- full
 #python3 5.2_sample_llm_completions_for_evaluation.py --full
+# python3 5.4_analyze_guess_which.py
 #
 #######################################################
 #######################################################
@@ -99,8 +100,12 @@
 ## not the sample since cb_test worked out
 #######################################################
 #######################################################
-#python3 old_6_make_tests_old.py
-#python3 7_run_model_tests.py
+#python3 6_make_tests.py
+# 7.1_run_model_tests.sh
+# 7.2_run_value_query.sh
+
+# 5.4_analyze_guess_which.py
+#python3 run_model_tests.py
 #
 #
 #
